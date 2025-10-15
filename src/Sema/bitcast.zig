@@ -267,7 +267,6 @@ const UnpackValueBits = struct {
             .int,
             .enum_tag,
             .simple_value,
-            .empty_enum_value,
             .float,
             .ptr,
             .opt,
@@ -451,7 +450,6 @@ const UnpackValueBits = struct {
             // The only values here with runtime bits are `true` and `false.
             // These are both 1 bit, so will never need truncating.
             .simple_value => unreachable,
-            .empty_enum_value => unreachable, // zero-bit
             else => unreachable, // zero-bit or not primitives
         }
     }

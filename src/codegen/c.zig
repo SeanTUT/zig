@@ -1052,7 +1052,6 @@ pub const DeclGen = struct {
             .@"extern",
             .func,
             .enum_literal,
-            .empty_enum_value,
             => unreachable, // non-runtime values
             .int => |int| switch (int.storage) {
                 .u64, .i64, .big_int => try w.print("{f}", .{try dg.fmtIntLiteralDec(val, location)}),
@@ -1898,7 +1897,6 @@ pub const DeclGen = struct {
                 .error_union,
                 .enum_literal,
                 .enum_tag,
-                .empty_enum_value,
                 .float,
                 .ptr,
                 .slice,

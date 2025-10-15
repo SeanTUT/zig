@@ -3292,7 +3292,7 @@ fn updateComptimeNavInner(dwarf: *Dwarf, pt: Zcu.PerThread, nav_index: InternPoo
                             try wip_nav.refType(field_type);
                             try diw.writeUleb128(union_layout.payloadOffset());
                             try diw.writeUleb128(loaded_union.fieldAlign(ip, field_index).toByteUnits() orelse
-                                if (field_type.isNoReturn(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
+                                if (field_type.isNoReturnLike(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
                         }
                         try diw.writeUleb128(@intFromEnum(AbbrevCode.null));
                     }
@@ -3304,7 +3304,7 @@ fn updateComptimeNavInner(dwarf: *Dwarf, pt: Zcu.PerThread, nav_index: InternPoo
                 const field_type: Type = .fromInterned(loaded_union.field_types.get(ip)[field_index]);
                 try wip_nav.refType(field_type);
                 try diw.writeUleb128(loaded_union.fieldAlign(ip, field_index).toByteUnits() orelse
-                    if (field_type.isNoReturn(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
+                    if (field_type.isNoReturnLike(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
             }
             try diw.writeUleb128(@intFromEnum(AbbrevCode.null));
             break :tag .done;
@@ -3342,7 +3342,6 @@ fn updateComptimeNavInner(dwarf: *Dwarf, pt: Zcu.PerThread, nav_index: InternPoo
         .error_union,
         .enum_literal,
         .enum_tag,
-        .empty_enum_value,
         .float,
         .ptr,
         .slice,
@@ -3848,7 +3847,7 @@ fn updateLazyType(
         },
         .enum_type => {
             const loaded_enum = ip.loadEnumType(type_index);
-            try wip_nav.abbrevCode(if (loaded_enum.names.len == 0) .generated_empty_enum_type else .generated_enum_type);
+            try wip_nav.abbrevCode(.generated_enum_type);
             try wip_nav.strp(name);
             try wip_nav.refType(.fromInterned(loaded_enum.tag_ty));
             for (0..loaded_enum.names.len) |field_index| {
@@ -3939,7 +3938,7 @@ fn updateLazyType(
             }
         },
         .error_set_type => |error_set_type| {
-            try wip_nav.abbrevCode(if (error_set_type.names.len == 0) .generated_empty_enum_type else .generated_enum_type);
+            try wip_nav.abbrevCode(.generated_enum_type);
             try wip_nav.strp(name);
             try wip_nav.refType(.fromInterned(try pt.intern(.{ .int_type = .{
                 .signedness = .unsigned,
@@ -3972,7 +3971,6 @@ fn updateLazyType(
         .error_union,
         .enum_literal,
         .enum_tag,
-        .empty_enum_value,
         .float,
         .ptr,
         .slice,
@@ -4118,7 +4116,6 @@ fn updateLazyValue(
             }, .fromInterned(int.ty), Value.fromInterned(value_index).toBigInt(&big_int_space, zcu));
             try wip_nav.refType(.fromInterned(enum_tag.ty));
         },
-        .empty_enum_value => unreachable,
         .float => |float| {
             switch (float.storage) {
                 .f16 => |f16_val| {
@@ -4366,7 +4363,7 @@ fn optRepr(opt_child_type: Type, zcu: *const Zcu) enum {
     error_set,
     pointer,
 } {
-    if (opt_child_type.isNoReturn(zcu)) return .opv_null;
+    if (opt_child_type.isNoReturnLike(zcu)) return .opv_null;
     return switch (opt_child_type.toIntern()) {
         .anyerror_type => .error_set,
         else => switch (zcu.intern_pool.indexToKey(opt_child_type.toIntern())) {
@@ -4606,7 +4603,7 @@ fn updateContainerTypeWriterError(
             },
             .enum_type => {
                 const loaded_enum = ip.loadEnumType(type_index);
-                try wip_nav.abbrevCode(if (loaded_enum.names.len > 0) .enum_type else .empty_enum_type);
+                try wip_nav.abbrevCode(.enum_type);
                 try diw.writeUleb128(file_gop.index);
                 try wip_nav.strp(name);
                 try wip_nav.refType(.fromInterned(loaded_enum.tag_ty));
@@ -4656,7 +4653,7 @@ fn updateContainerTypeWriterError(
                                 try wip_nav.refType(field_type);
                                 try diw.writeUleb128(union_layout.payloadOffset());
                                 try diw.writeUleb128(loaded_union.fieldAlign(ip, field_index).toByteUnits() orelse
-                                    if (field_type.isNoReturn(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
+                                    if (field_type.isNoReturnLike(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
                             }
                             try diw.writeUleb128(@intFromEnum(AbbrevCode.null));
                         }
@@ -4668,7 +4665,7 @@ fn updateContainerTypeWriterError(
                     const field_type: Type = .fromInterned(loaded_union.field_types.get(ip)[field_index]);
                     try wip_nav.refType(field_type);
                     try diw.writeUleb128(loaded_union.fieldAlign(ip, field_index).toByteUnits() orelse
-                        if (field_type.isNoReturn(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
+                        if (field_type.isNoReturnLike(zcu)) 1 else field_type.abiAlignment(zcu).toByteUnits().?);
                 }
                 if (loaded_union.field_types.len > 0) try diw.writeUleb128(@intFromEnum(AbbrevCode.null));
             },
@@ -4767,7 +4764,7 @@ fn flushWriterError(dwarf: *Dwarf, pt: Zcu.PerThread) (FlushError || Writer.Erro
         defer wip_nav.deinit();
         const diw = &wip_nav.debug_info.writer;
         const global_error_set_names = ip.global_error_set.getNamesFromMainThread();
-        try wip_nav.abbrevCode(if (global_error_set_names.len == 0) .generated_empty_enum_type else .generated_enum_type);
+        try wip_nav.abbrevCode(.generated_enum_type);
         try wip_nav.strp("anyerror");
         try wip_nav.refType(.fromInterned(try pt.intern(.{ .int_type = .{
             .signedness = .unsigned,
@@ -5239,12 +5236,10 @@ const AbbrevCode = enum {
     func_type,
     func_type_param,
     is_var_args,
-    generated_empty_enum_type,
     generated_enum_type,
     generated_empty_struct_type,
     generated_struct_type,
     generated_union_type,
-    empty_enum_type,
     enum_type,
     empty_struct_type,
     struct_type,
@@ -5942,13 +5937,6 @@ const AbbrevCode = enum {
         .is_var_args = .{
             .tag = .unspecified_parameters,
         },
-        .generated_empty_enum_type = .{
-            .tag = .enumeration_type,
-            .attrs = &.{
-                .{ .name, .strp },
-                .{ .type, .ref_addr },
-            },
-        },
         .generated_enum_type = .{
             .tag = .enumeration_type,
             .children = true,
@@ -5980,14 +5968,6 @@ const AbbrevCode = enum {
                 .{ .name, .strp },
                 .{ .byte_size, .udata },
                 .{ .alignment, .udata },
-            },
-        },
-        .empty_enum_type = .{
-            .tag = .enumeration_type,
-            .attrs = &.{
-                .{ .decl_file, .udata },
-                .{ .name, .strp },
-                .{ .type, .ref_addr },
             },
         },
         .enum_type = .{

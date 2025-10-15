@@ -9,12 +9,16 @@ pub const ComptimeLoadResult = union(enum) {
     needed_well_defined: Type,
     out_of_bounds: Type,
     exceeds_host_size,
+    noreturn_like: Type,
 };
 
 pub fn loadComptimePtr(sema: *Sema, block: *Block, src: LazySrcLoc, ptr: Value) !ComptimeLoadResult {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ptr_info = ptr.typeOf(pt.zcu).ptrInfo(pt.zcu);
+    if (try Type.fromInterned(ptr_info.child).isNoReturnLikeSema(pt)) {
+        return .{ .noreturn_like = .fromInterned(ptr_info.child) };
+    }
     // TODO: host size for vectors is terrible
     const host_bits = switch (ptr_info.flags.vector_index) {
         .none => ptr_info.packed_offset.host_size * 8,
@@ -50,6 +54,7 @@ pub const ComptimeStoreResult = union(enum) {
     needed_well_defined: Type,
     out_of_bounds: Type,
     exceeds_host_size,
+    noreturn_like: Type,
 };
 
 /// Perform a comptime load of value `store_val` to a pointer.
@@ -113,6 +118,7 @@ pub fn storeComptimePtr(
                 .inactive_union_field => return .inactive_union_field,
                 .needed_well_defined => |ty| return .{ .needed_well_defined = ty },
                 .out_of_bounds => |ty| return .{ .out_of_bounds = ty },
+                .noreturn_like => |ty| return .{ .noreturn_like = ty },
             };
             const expected = try expected_mv.intern(pt, sema.arena);
             if (store_val.toIntern() != expected.toIntern()) {

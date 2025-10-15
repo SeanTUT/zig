@@ -2823,7 +2823,6 @@ pub const Pool = struct {
                 .error_union,
                 .enum_literal,
                 .enum_tag,
-                .empty_enum_value,
                 .float,
                 .ptr,
                 .slice,

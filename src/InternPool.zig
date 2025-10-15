@@ -2046,10 +2046,6 @@ pub const Key = union(enum) {
     enum_literal: NullTerminatedString,
     /// A specific enum tag, indicated by the integer tag value.
     enum_tag: EnumTag,
-    /// An empty enum or union. TODO: this value's existence is strange, because such a type in
-    /// reality has no values. See #15909.
-    /// Payload is the type for which we are an empty value.
-    empty_enum_value: Index,
     float: Float,
     ptr: Ptr,
     slice: Slice,
@@ -2664,7 +2660,6 @@ pub const Key = union(enum) {
             .err,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .inferred_error_set_type,
             .un,
             => |x| Hash.hash(seed, asBytes(&x)),
@@ -2955,10 +2950,6 @@ pub const Key = union(enum) {
             .enum_tag => |a_info| {
                 const b_info = b.enum_tag;
                 return std.meta.eql(a_info, b_info);
-            },
-            .empty_enum_value => |a_info| {
-                const b_info = b.empty_enum_value;
-                return a_info == b_info;
             },
 
             .variable => |a_info| {
@@ -3251,7 +3242,6 @@ pub const Key = union(enum) {
             .enum_literal => .enum_literal_type,
 
             .undef => |x| x,
-            .empty_enum_value => |x| x,
 
             .simple_value => |s| switch (s) {
                 .undefined => .undefined_type,
@@ -3389,6 +3379,16 @@ pub const LoadedUnionType = struct {
 
     pub fn flagsUnordered(u: LoadedUnionType, ip: *const InternPool) Tag.TypeUnion.Flags {
         return @atomicLoad(Tag.TypeUnion.Flags, u.flagsPtr(ip), .unordered);
+    }
+
+    pub fn takePointer(u: LoadedUnionType, ip: *const InternPool) bool {
+        const pointer_take_bit: u32 = 1 << @bitOffsetOf(Tag.TypeUnion.Flags, "taken_pointer");
+        return @atomicLoad(Tag.TypeUnion.Flags, @as(*u32, @ptrCast(u.flagsPtr(ip))), pointer_take_bit.acquire);
+    }
+
+    pub fn pointerBeenTaken(u: LoadedUnionType, ip: *const InternPool) Tag.TypeUnion.Flags {
+        const pointer_take_bit: u32 = 1 << @bitOffsetOf(Tag.TypeUnion.Flags, "taken_pointer");
+        return @atomicLoad(Tag.TypeUnion.Flags, @as(*u32, @ptrCast(u.flagsPtr(ip))), pointer_take_bit.acquire);
     }
 
     pub fn setStatus(u: LoadedUnionType, ip: *InternPool, status: Status) void {
@@ -6506,6 +6506,7 @@ pub const EnumExplicit = struct {
     namespace: NamespaceIndex,
     /// An integer type which is used for the numerical value of the enum, which
     /// has been explicitly provided by the enum declaration.
+    /// In the case of an empty enum, this is noreturn.
     int_tag_type: Index,
     fields_len: u32,
     /// Maps field names to declaration index.
@@ -6532,6 +6533,7 @@ pub const EnumAuto = struct {
     namespace: NamespaceIndex,
     /// An integer type which is used for the numerical value of the enum, which
     /// was inferred by Zig based on the number of tags.
+    /// In the case of an empty enum, this is noreturn.
     int_tag_type: Index,
     fields_len: u32,
     /// Maps field names to declaration index.
@@ -7410,11 +7412,6 @@ pub fn indexToKey(ip: *const InternPool, index: Index) Key {
                         .storage = .{ .elems = @ptrCast(values) },
                     } };
                 },
-
-                .type_enum_auto,
-                .type_enum_explicit,
-                .type_union,
-                => .{ .empty_enum_value = ty },
 
                 else => unreachable,
             };
@@ -8365,11 +8362,6 @@ pub fn get(ip: *InternPool, gpa: Allocator, tid: Zcu.PerThread.Id, key: Key) All
                 .data = try addExtra(extra, enum_tag),
             });
         },
-
-        .empty_enum_value => |enum_or_union_ty| items.appendAssumeCapacity(.{
-            .tag = .only_possible_value,
-            .data = @intFromEnum(enum_or_union_ty),
-        }),
 
         .float => |float| {
             switch (float.ty) {
@@ -9896,7 +9888,7 @@ pub const WipEnumType = struct {
     }
 
     pub fn setTagTy(wip: WipEnumType, ip: *InternPool, tag_ty: Index) void {
-        assert(ip.isIntegerType(tag_ty));
+        assert(ip.isIntegerType(tag_ty) or tag_ty == .noreturn_type);
         const extra = ip.getLocalShared(wip.tid).extra.acquire();
         extra.view().items(.@"0")[wip.tag_ty_index] = @intFromEnum(tag_ty);
     }
@@ -12248,16 +12240,164 @@ pub fn funcTypeReturnType(ip: *const InternPool, ty: Index) Index {
     ]);
 }
 
+/// Not to be confused with `isNoReturnLike`
 pub fn isNoReturn(ip: *const InternPool, ty: Index) bool {
     switch (ty) {
+        .none => unreachable,
+
         .noreturn_type => return true,
-        else => {
+
+        .anyopaque_type,
+        .adhoc_inferred_error_set_type,
+        .anyerror_type,
+        .anyerror_void_error_union_type,
+        .optional_noreturn_type,
+        .type_type,
+        .enum_literal_type,
+        .comptime_float_type,
+        .comptime_int_type,
+        .null_type,
+        .undefined_type,
+        .void_type,
+        .empty_tuple_type,
+        .bool_type,
+        .c_char_type,
+        .c_int_type,
+        .c_long_type,
+        .c_longdouble_type,
+        .c_longlong_type,
+        .c_short_type,
+        .c_uint_type,
+        .c_ulong_type,
+        .c_ulonglong_type,
+        .c_ushort_type,
+        .f16_type,
+        .f32_type,
+        .f64_type,
+        .f80_type,
+        .f128_type,
+        .i0_type,
+        .u0_type,
+        .u1_type,
+        .i8_type,
+        .u8_type,
+        .i16_type,
+        .u16_type,
+        .u29_type,
+        .i32_type,
+        .u32_type,
+        .i64_type,
+        .u64_type,
+        .u80_type,
+        .i128_type,
+        .u128_type,
+        .u256_type,
+        .usize_type,
+        .isize_type,
+        .vector_16_f16_type,
+        .vector_16_f32_type,
+        .vector_16_i16_type,
+        .vector_16_i32_type,
+        .vector_16_i8_type,
+        .vector_16_u16_type,
+        .vector_16_u32_type,
+        .vector_16_u8_type,
+        .vector_1_u128_type,
+        .vector_1_u256_type,
+        .vector_1_u8_type,
+        .vector_2_f32_type,
+        .vector_2_f64_type,
+        .vector_2_i16_type,
+        .vector_2_i32_type,
+        .vector_2_i64_type,
+        .vector_2_u128_type,
+        .vector_2_u64_type,
+        .vector_2_u8_type,
+        .vector_32_f16_type,
+        .vector_32_i16_type,
+        .vector_32_i8_type,
+        .vector_32_u16_type,
+        .vector_32_u8_type,
+        .vector_4_f16_type,
+        .vector_4_f32_type,
+        .vector_4_f64_type,
+        .vector_4_i16_type,
+        .vector_4_i32_type,
+        .vector_4_i64_type,
+        .vector_4_u16_type,
+        .vector_4_u32_type,
+        .vector_4_u64_type,
+        .vector_4_u8_type,
+        .vector_64_i8_type,
+        .vector_64_u8_type,
+        .vector_8_f16_type,
+        .vector_8_f32_type,
+        .vector_8_f64_type,
+        .vector_8_i16_type,
+        .vector_8_i32_type,
+        .vector_8_i64_type,
+        .vector_8_i8_type,
+        .vector_8_u16_type,
+        .vector_8_u32_type,
+        .vector_8_u64_type,
+        .vector_8_u8_type,
+        .manyptr_const_u8_sentinel_0_type,
+        .manyptr_const_u8_type,
+        .ptr_const_comptime_int_type,
+        .ptr_usize_type,
+        .slice_const_u8_sentinel_0_type,
+        .slice_const_u8_type,
+        .manyptr_u8_type,
+        => return false,
+
+        .anyframe_type => unreachable,
+        .generic_poison_type => unreachable,
+
+        // values, not types
+        .bool_false,
+        .bool_true,
+        .undef_bool,
+        .undef,
+        .empty_tuple,
+        .four_u8,
+        .negative_one,
+        .null_value,
+        .one,
+        .one_u1,
+        .one_u8,
+        .one_usize,
+        .undef_u1,
+        .undef_usize,
+        .unreachable_value,
+        .void_value,
+        .zero,
+        .zero_u1,
+        .zero_u8,
+        .zero_usize,
+        => unreachable,
+
+        _ => {
             const unwrapped_ty = ty.unwrap(ip);
             const ty_item = unwrapped_ty.getItem(ip);
-            return switch (ty_item.tag) {
-                .type_error_set => unwrapped_ty.getExtra(ip).view().items(.@"0")[ty_item.data + std.meta.fieldIndex(Tag.ErrorSet, "names_len").?] == 0,
-                else => false,
-            };
+            switch (ty_item.tag) {
+                .type_error_set => {
+                    const extras = unwrapped_ty.getExtra(ip).view().items(.@"0");
+                    return extras[ty_item.data + std.meta.fieldIndex(Tag.ErrorSet, "names_len").?] == 0;
+                },
+                .type_inferred_error_set => return switch (ip.funcIesResolvedUnordered(@enumFromInt(unwrapped_ty.getData(ip)))) {
+                    .none, .anyerror_type => false,
+                    else => |t| ip.indexToKey(t).error_set_type.names.len == 0,
+                },
+                .type_error_union => {
+                    const extras = unwrapped_ty.getExtra(ip).view().items(.@"0");
+                    const error_set_off = ty_item.data + std.meta.fieldIndex(Tag.ErrorUnionType, "error_set_type").?;
+                    const payload_type_off = ty_item.data + std.meta.fieldIndex(Tag.ErrorUnionType, "payload_type").?;
+                    const error_set_type: Index = @enumFromInt(extras[error_set_off]);
+                    const payload_type: Index = @enumFromInt(extras[payload_type_off]);
+                    return ip.isNoReturn(payload_type) and ip.isNoReturn(error_set_type);
+                },
+                else => return false,
+            }
         },
     }
 }

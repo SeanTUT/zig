@@ -796,7 +796,6 @@ fn constant(cg: *CodeGen, ty: Type, val: Value, repr: Repr) Error!Id {
             .@"extern",
             .func,
             .enum_literal,
-            .empty_enum_value,
             => unreachable, // non-runtime values
 
             .simple_value => |simple_value| switch (simple_value) {

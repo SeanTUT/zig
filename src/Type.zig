@@ -26,12 +26,14 @@ pub fn zigTypeTag(ty: Type, zcu: *const Zcu) std.builtin.TypeId {
 }
 
 pub fn baseZigTypeTag(self: Type, mod: *Zcu) std.builtin.TypeId {
+    return self.baseType(mod).zigTypeTag(mod);
+}
+
+pub fn baseType(self: Type, mod: *Zcu) Type {
     return switch (self.zigTypeTag(mod)) {
-        .error_union => self.errorUnionPayload(mod).baseZigTypeTag(mod),
-        .optional => {
-            return self.optionalChild(mod).baseZigTypeTag(mod);
-        },
-        else => |t| t,
+        .error_union => self.errorUnionPayload(mod),
+        .optional => self.optionalChild(mod),
+        else => self,
     };
 }
 
@@ -408,7 +410,6 @@ pub fn print(ty: Type, writer: *std.Io.Writer, pt: Zcu.PerThread) std.Io.Writer.
         .error_union,
         .enum_literal,
         .enum_tag,
-        .empty_enum_value,
         .float,
         .ptr,
         .slice,
@@ -477,6 +478,7 @@ pub fn hasRuntimeBitsInner(
     zcu: strat.ZcuPtr(),
     tid: strat.Tid(),
 ) RuntimeBitsError!bool {
+    const pt = strat.pt(zcu, tid);
     const ip = &zcu.intern_pool;
     return switch (ty.toIntern()) {
         .empty_tuple_type => false,
@@ -487,10 +489,7 @@ pub fn hasRuntimeBitsInner(
                 // to comptime-only types do not, with the exception of function pointers.
                 if (ignore_comptime_only) return true;
                 return switch (strat) {
-                    .sema => {
-                        const pt = strat.pt(zcu, tid);
-                        return !try ty.comptimeOnlySema(pt);
-                    },
+                    .sema => !try ty.comptimeOnlySema(pt),
                     .eager => !ty.comptimeOnly(zcu),
                     .lazy => error.NeedLazy,
                 };
@@ -501,15 +500,28 @@ pub fn hasRuntimeBitsInner(
             .vector_type => |vector_type| return vector_type.len > 0 and
                 try Type.fromInterned(vector_type.child).hasRuntimeBitsInner(ignore_comptime_only, strat, zcu, tid),
             .opt_type => |child| {
-                const child_ty = Type.fromInterned(child);
-                if (child_ty.isNoReturn(zcu)) {
+                const child_ty: Type = .fromInterned(child);
+                const is_no_return = switch (strat) {
+                    .sema => try child_ty.isNoReturnLikeSema(pt),
+                    .eager => child_ty.isNoReturnLike(zcu),
+                    .lazy => switch (zigTypeTag(child_ty, zcu)) {
+                        .noreturn => true,
+                        .@"enum" => child_ty.isNoReturnLike(zcu),
+                        .@"union",
+                        .error_set,
+                        .error_union,
+                        => return error.NeedLazy,
+                        else => false,
+                    },
+                };
+                if (is_no_return) {
                     // Then the optional is comptime-known to be null.
                     return false;
                 }
                 if (ignore_comptime_only) return true;
                 return switch (strat) {
-                    .sema => !try child_ty.comptimeOnlyInner(.sema, zcu, tid),
-                    .eager => !child_ty.comptimeOnly(zcu),
+                    .sema => return !try child_ty.comptimeOnlySema(pt),
+                    .eager => return !child_ty.comptimeOnly(zcu),
                     .lazy => error.NeedLazy,
                 };
             },
@@ -655,7 +667,6 @@ pub fn hasRuntimeBitsInner(
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,
@@ -752,7 +763,6 @@ pub fn hasWellDefinedLayout(ty: Type, zcu: *const Zcu) bool {
         .error_union,
         .enum_literal,
         .enum_tag,
-        .empty_enum_value,
         .float,
         .ptr,
         .slice,
@@ -802,10 +812,6 @@ pub fn isFnOrHasRuntimeBitsIgnoreComptime(ty: Type, zcu: *Zcu) bool {
         .@"fn" => true,
         else => return ty.hasRuntimeBitsIgnoreComptime(zcu),
     };
-}
-
-pub fn isNoReturn(ty: Type, zcu: *const Zcu) bool {
-    return zcu.intern_pool.isNoReturn(ty.toIntern());
 }
 
 /// Never returns `none`. Asserts that all necessary type resolution is already done.
@@ -938,6 +944,220 @@ pub const ResolveStrat = enum {
     }
 };
 
+/// Whether a type is "noreturn-like".
+/// True for any of the following:
+/// - `noreturn`
+/// - Exhaustive empty enum types
+/// - Empty error sets
+/// - Unions with no fields or all noreturn-like fields
+/// - Error unions with an empty error set and noreturn-like payload
+fn isNoReturnLikeInner(ty: Type, zcu: *const Zcu, maybe_tid: ?Zcu.PerThread.Id) SemaError!bool {
+    const ip: *const InternPool = &zcu.intern_pool;
+    switch (ty.toIntern()) {
+        .none => unreachable,
+
+        .noreturn_type => return true,
+
+        _ => |intern| switch (ip.indexToKey(intern)) {
+            .error_set_type => |info| return info.names.len == 0,
+            .inferred_error_set_type => |i| return switch (ip.funcIesResolvedUnordered(i)) {
+                .none => false,
+                .anyerror_type => zcu.error_limit == 0,
+                else => |t| ip.indexToKey(t).error_set_type.names.len == 0,
+            },
+            .enum_type => return ip.loadEnumType(intern).tag_ty == .noreturn_type,
+            .error_union_type => |info| {
+                const error_set_ty: Type = .fromInterned(info.error_set_type);
+                const payload_ty: Type = .fromInterned(info.payload_type);
+                return try error_set_ty.isNoReturnLikeInner(zcu, maybe_tid) and
+                    try payload_ty.isNoReturnLikeInner(zcu, maybe_tid);
+            },
+            .union_type => {
+                const union_type = ip.loadUnionType(ty.ip_index);
+
+                if (maybe_tid) |tid| {
+                    // When resolving the fields,
+                    // avoid dependency loops by
+                    // treating the type as
+                    // not noreturn-like until it is fully resolved.
+                    const flags = union_type.flagsUnordered(ip);
+                    switch (flags.status) {
+                        .none => try ty.resolveFields(.{
+                            .tid = tid,
+                            .zcu = @constCast(zcu),
+                        }),
+                        .field_types_wip => {
+                            // Uhhh
+                            // how the hell do we resolve this?
+                            return false;
+                        },
+                        else => {},
+                    }
+                }
+
+                return for (union_type.field_types.get(ip)) |field_ty_intern| {
+                    const field_ty: Type = .fromInterned(field_ty_intern);
+                    if (!try field_ty.isNoReturnLikeInner(zcu, maybe_tid)) break false;
+                } else true;
+            },
+            else => return false,
+        },
+
+        .anyopaque_type,
+        .adhoc_inferred_error_set_type,
+        .anyerror_type,
+        .anyerror_void_error_union_type,
+        .optional_noreturn_type,
+        .type_type,
+        .enum_literal_type,
+        .comptime_float_type,
+        .comptime_int_type,
+        .null_type,
+        .undefined_type,
+        .void_type,
+        .empty_tuple_type,
+        .bool_type,
+        .c_char_type,
+        .c_int_type,
+        .c_long_type,
+        .c_longdouble_type,
+        .c_longlong_type,
+        .c_short_type,
+        .c_uint_type,
+        .c_ulong_type,
+        .c_ulonglong_type,
+        .c_ushort_type,
+        .f16_type,
+        .f32_type,
+        .f64_type,
+        .f80_type,
+        .f128_type,
+        .i0_type,
+        .u0_type,
+        .u1_type,
+        .i8_type,
+        .u8_type,
+        .i16_type,
+        .u16_type,
+        .u29_type,
+        .i32_type,
+        .u32_type,
+        .i64_type,
+        .u64_type,
+        .u80_type,
+        .i128_type,
+        .u128_type,
+        .u256_type,
+        .usize_type,
+        .isize_type,
+        .vector_16_f16_type,
+        .vector_16_f32_type,
+        .vector_16_i16_type,
+        .vector_16_i32_type,
+        .vector_16_i8_type,
+        .vector_16_u16_type,
+        .vector_16_u32_type,
+        .vector_16_u8_type,
+        .vector_1_u128_type,
+        .vector_1_u256_type,
+        .vector_1_u8_type,
+        .vector_2_f32_type,
+        .vector_2_f64_type,
+        .vector_2_i16_type,
+        .vector_2_i32_type,
+        .vector_2_i64_type,
+        .vector_2_u128_type,
+        .vector_2_u64_type,
+        .vector_2_u8_type,
+        .vector_32_f16_type,
+        .vector_32_i16_type,
+        .vector_32_i8_type,
+        .vector_32_u16_type,
+        .vector_32_u8_type,
+        .vector_4_f16_type,
+        .vector_4_f32_type,
+        .vector_4_f64_type,
+        .vector_4_i16_type,
+        .vector_4_i32_type,
+        .vector_4_i64_type,
+        .vector_4_u16_type,
+        .vector_4_u32_type,
+        .vector_4_u64_type,
+        .vector_4_u8_type,
+        .vector_64_i8_type,
+        .vector_64_u8_type,
+        .vector_8_f16_type,
+        .vector_8_f32_type,
+        .vector_8_f64_type,
+        .vector_8_i16_type,
+        .vector_8_i32_type,
+        .vector_8_i64_type,
+        .vector_8_i8_type,
+        .vector_8_u16_type,
+        .vector_8_u32_type,
+        .vector_8_u64_type,
+        .vector_8_u8_type,
+        .manyptr_const_u8_sentinel_0_type,
+        .manyptr_const_u8_type,
+        .ptr_const_comptime_int_type,
+        .ptr_usize_type,
+        .slice_const_u8_sentinel_0_type,
+        .slice_const_u8_type,
+        .manyptr_u8_type,
+        => return false,
+
+        .anyframe_type => unreachable,
+        .generic_poison_type => unreachable,
+
+        // values, not types
+        .bool_false,
+        .bool_true,
+        .undef_bool,
+        .undef,
+        .empty_tuple,
+        .four_u8,
+        .negative_one,
+        .null_value,
+        .one,
+        .one_u1,
+        .one_u8,
+        .one_usize,
+        .undef_u1,
+        .undef_usize,
+        .unreachable_value,
+        .void_value,
+        .zero,
+        .zero_u1,
+        .zero_u8,
+        .zero_usize,
+        => unreachable,
+    }
+}
+
+/// Whether a type is "noreturn-like".
+/// Asserts that all necessary type resolution is already done.
+/// True for any of the following:
+/// - noreturn
+/// - Exhaustive empty enum types
+/// - Empty error sets
+/// - Unions with no fields or all noreturn-like fields
+/// - Error unions with an empty error set and noreturn-like payload
+pub fn isNoReturnLike(ty: Type, zcu: *const Zcu) bool {
+    return ty.isNoReturnLikeInner(zcu, null) catch unreachable;
+}
+
+/// Whether a type is "noreturn-like".
+/// Performs resolution as necessary is already done.
+/// True for any of the following:
+/// - noreturn
+/// - Exhaustive empty enum types
+/// - Empty error sets
+/// - Unions with no fields or all noreturn-like fields
+/// - Error unions with an empty error set and noreturn-like payload
+pub fn isNoReturnLikeSema(ty: Type, pt: Zcu.PerThread) SemaError!bool {
+    return ty.isNoReturnLikeInner(pt.zcu, pt.tid);
+}
+
 /// Never returns `none`. Asserts that all necessary type resolution is already done.
 pub fn abiAlignment(ty: Type, zcu: *const Zcu) Alignment {
     return (ty.abiAlignmentInner(.eager, zcu, {}) catch unreachable).scalar;
@@ -960,8 +1180,8 @@ pub fn abiAlignmentInner(
     tid: strat.Tid(),
 ) SemaError!AbiAlignmentInner {
     const pt = strat.pt(zcu, tid);
-    const target = zcu.getTarget();
-    const ip = &zcu.intern_pool;
+    const target: *const Target = zcu.getTarget();
+    const ip: *const InternPool = &zcu.intern_pool;
 
     switch (ty.toIntern()) {
         .empty_tuple_type => return .{ .scalar = .@"1" },
@@ -1077,7 +1297,8 @@ pub fn abiAlignmentInner(
                 .enum_literal,
                 => return .{ .scalar = .@"1" },
 
-                .noreturn => unreachable,
+                .noreturn => return .{ .scalar = .@"1" },
+
                 .generic_poison => unreachable,
             },
             .struct_type => {
@@ -1155,7 +1376,6 @@ pub fn abiAlignmentInner(
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,
@@ -1225,6 +1445,9 @@ fn abiAlignmentInnerOptional(
         .pointer => return .{ .scalar = ptrAbiAlignment(target) },
         .error_set => return Type.anyerror.abiAlignmentInner(strat, zcu, tid),
         .noreturn => return .{ .scalar = .@"1" },
+        .@"union" => if (strat == .sema) {
+            try ty.resolveFields(pt);
+        },
         else => {},
     }
 
@@ -1243,9 +1466,9 @@ fn abiAlignmentInnerOptional(
             }
             return child_type.abiAlignmentInner(strat, zcu, tid);
         },
-        .lazy => switch (try child_type.abiAlignmentInner(strat, zcu, tid)) {
-            .scalar => |x| return .{ .scalar = x.max(.@"1") },
-            .val => return .{ .val = Value.fromInterned(try pt.intern(.{ .int = .{
+        .lazy => return switch (try child_type.abiAlignmentInner(strat, zcu, tid)) {
+            .scalar => |x| .{ .scalar = x.max(.@"1") },
+            .val => .{ .val = Value.fromInterned(try pt.intern(.{ .int = .{
                 .ty = .comptime_int_type,
                 .storage = .{ .lazy_align = ty.toIntern() },
             } })) },
@@ -1540,7 +1763,6 @@ pub fn abiSizeInner(
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,
@@ -1562,7 +1784,12 @@ fn abiSizeInnerOptional(
 ) SemaError!AbiSizeInner {
     const child_ty = ty.optionalChild(zcu);
 
-    if (child_ty.isNoReturn(zcu)) {
+    switch (strat) {
+        .sema => try child_ty.resolveFields(strat.pt(zcu, tid)),
+        else => {},
+    }
+
+    if (child_ty.isNoReturnLike(zcu)) {
         return .{ .scalar = 0 };
     }
 
@@ -1763,7 +1990,6 @@ pub fn bitSizeInner(
         .error_union,
         .enum_literal,
         .enum_tag,
-        .empty_enum_value,
         .float,
         .ptr,
         .slice,
@@ -2329,7 +2555,6 @@ pub fn intInfo(starting_ty: Type, zcu: *const Zcu) InternPool.Key.IntType {
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,
@@ -2413,25 +2638,13 @@ pub fn fnReturnType(ty: Type, zcu: *const Zcu) Type {
     return Type.fromInterned(zcu.intern_pool.funcTypeReturnType(ty.toIntern()));
 }
 
+pub fn isNoReturn(ty: Type, zcu: *const Zcu) bool {
+    return zcu.intern_pool.isNoReturn(ty.toIntern());
+}
+
 /// Asserts the type is a function.
 pub fn fnCallingConvention(ty: Type, zcu: *const Zcu) std.builtin.CallingConvention {
     return zcu.intern_pool.indexToKey(ty.toIntern()).func_type.cc;
-}
-
-pub fn isValidParamType(self: Type, zcu: *const Zcu) bool {
-    if (self.toIntern() == .generic_poison_type) return true;
-    return switch (self.zigTypeTag(zcu)) {
-        .@"opaque", .noreturn => false,
-        else => true,
-    };
-}
-
-pub fn isValidReturnType(self: Type, zcu: *const Zcu) bool {
-    if (self.toIntern() == .generic_poison_type) return true;
-    return switch (self.zigTypeTag(zcu)) {
-        .@"opaque" => false,
-        else => true,
-    };
 }
 
 /// Asserts the type is a function.
@@ -2612,8 +2825,7 @@ pub fn onePossibleValue(starting_type: Type, pt: Zcu.PerThread) !?Value {
                 const tag_val = (try Type.fromInterned(union_obj.enum_tag_ty).onePossibleValue(pt)) orelse
                     return null;
                 if (union_obj.field_types.len == 0) {
-                    const only = try pt.intern(.{ .empty_enum_value = ty.toIntern() });
-                    return Value.fromInterned(only);
+                    return null;
                 }
                 const only_field_ty = union_obj.field_types.get(ip)[0];
                 const val_val = (try Type.fromInterned(only_field_ty).onePossibleValue(pt)) orelse
@@ -2646,7 +2858,7 @@ pub fn onePossibleValue(starting_type: Type, pt: Zcu.PerThread) !?Value {
                         if (Type.fromInterned(enum_type.tag_ty).hasRuntimeBits(zcu)) return null;
 
                         return Value.fromInterned(switch (enum_type.names.len) {
-                            0 => try pt.intern(.{ .empty_enum_value = ty.toIntern() }),
+                            0 => return null,
                             1 => try pt.intern(.{ .enum_tag = .{
                                 .ty = ty.toIntern(),
                                 .int = if (enum_type.values.len == 0)
@@ -2676,7 +2888,6 @@ pub fn onePossibleValue(starting_type: Type, pt: Zcu.PerThread) !?Value {
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,
@@ -2883,7 +3094,6 @@ pub fn comptimeOnlyInner(
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,
@@ -3276,8 +3486,11 @@ pub fn unionFieldAlignmentInner(
     tid: strat.Tid(),
 ) SemaError!Alignment {
     assert(layout != .@"packed");
+    if (switch (strat) {
+        .sema => try field_ty.isNoReturnLikeSema(strat.pt(zcu, tid)),
+        .normal => field_ty.isNoReturnLike(zcu),
+    }) return .none;
     if (explicit_alignment != .none) return explicit_alignment;
-    if (field_ty.isNoReturn(zcu)) return .none;
     return (try field_ty.abiAlignmentInner(strat.toLazy(), zcu, tid)).scalar;
 }
 
@@ -3897,7 +4110,7 @@ pub fn getUnionLayout(loaded_union: InternPool.LoadedUnionType, zcu: *const Zcu)
     var payload_align: InternPool.Alignment = .@"1";
     for (loaded_union.field_types.get(ip), 0..) |field_ty_ip_index, field_index| {
         const field_ty: Type = .fromInterned(field_ty_ip_index);
-        if (field_ty.isNoReturn(zcu)) continue;
+        if (field_ty.isNoReturnLike(zcu)) continue;
 
         const explicit_align = loaded_union.fieldAlign(ip, field_index);
         const field_align = if (explicit_align != .none)

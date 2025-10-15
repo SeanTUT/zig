@@ -358,7 +358,6 @@ pub fn generateSymbol(
         .@"extern",
         .func,
         .enum_literal,
-        .empty_enum_value,
         => unreachable, // non-runtime values
         .int => {
             const abi_size = math.cast(usize, ty.abiSize(zcu)) orelse return error.Overflow;

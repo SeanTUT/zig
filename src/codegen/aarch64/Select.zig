@@ -10559,7 +10559,6 @@ pub const Value = struct {
                     .error_union,
                     .enum_literal,
                     .enum_tag,
-                    .empty_enum_value,
                     .float,
                     .ptr,
                     .slice,
@@ -10682,7 +10681,6 @@ pub const Value = struct {
                                 .inferred_error_set_type,
 
                                 .enum_literal,
-                                .empty_enum_value,
                                 .memoized_call,
                                 => unreachable, // not a runtime value
                                 .undef => break :free try isel.emit(if (mat.ra.isVector()) .movi(switch (size) {
@@ -11352,7 +11350,6 @@ fn writeKeyToMemory(isel: *Select, constant_key: InternPool.Key, buffer: []u8) e
         .inferred_error_set_type,
 
         .enum_literal,
-        .empty_enum_value,
         .memoized_call,
         => unreachable, // not a runtime value
         .err => |err| {
@@ -12270,7 +12267,6 @@ pub const CallAbiIterator = struct {
             .error_union,
             .enum_literal,
             .enum_tag,
-            .empty_enum_value,
             .float,
             .ptr,
             .slice,

@@ -1104,14 +1104,17 @@ pub inline fn hasUniqueRepresentation(comptime T: type) bool {
         else => false, // TODO can we know if it's true for some of these types ?
 
         .@"anyframe",
-        .@"enum",
-        .error_set,
         .@"fn",
+        .void,
         => true,
 
         .bool => false,
 
-        .int => |info| @sizeOf(T) * 8 == info.bits,
+        .@"enum" => |info| hasUniqueRepresentation(info.tag_type),
+
+        .error_set => @bitSizeOf(T) == @sizeOf(T) * 8,
+
+        inline .int, .float => |info| @sizeOf(T) * 8 == info.bits,
 
         .pointer => |info| info.size != .slice,
 
@@ -1123,24 +1126,38 @@ pub inline fn hasUniqueRepresentation(comptime T: type) bool {
             else => false,
         },
 
-        .array => |info| hasUniqueRepresentation(info.child),
+        .array => |info| info.len == 0 or hasUniqueRepresentation(info.child),
 
-        .@"struct" => |info| {
-            if (info.layout == .@"packed") return @sizeOf(T) * 8 == @bitSizeOf(T);
-
-            var sum_size = @as(usize, 0);
-
-            inline for (info.fields) |field| {
-                if (field.is_comptime) continue;
-                if (!hasUniqueRepresentation(field.type)) return false;
-                sum_size += @sizeOf(field.type);
-            }
-
-            return @sizeOf(T) == sum_size;
+        .@"struct" => |info| switch (info.layout) {
+            .@"packed" => hasUniqueRepresentation(info.backing_integer.?),
+            .auto, .@"extern" => struct_fields_check: {
+                var sum_size: usize = 0;
+                break :struct_fields_check inline for (info.fields) |field| {
+                    if (field.is_comptime) continue;
+                    if (!hasUniqueRepresentation(field.type)) break false;
+                    sum_size += @sizeOf(field.type);
+                } else @sizeOf(T) == sum_size;
+            },
         },
 
-        .vector => |info| hasUniqueRepresentation(info.child) and
-            @sizeOf(T) == @sizeOf(info.child) * info.len,
+        .@"union" => |info| info.fields.len > 0 and switch (info.layout) {
+            .@"packed" => @sizeOf(T) * 8 == @bitSizeOf(T),
+            .auto, .@"extern" => check_union_fields: {
+                // TODO: can this be determined for tagged enums with more fields?
+                if (info.fields.len == 1) {
+                    break :check_union_fields @sizeOf(T) == @sizeOf(info.fields[0].type) and
+                        hasUniqueRepresentation(info.fields[0].type);
+                } else {
+                    break :check_union_fields false;
+                }
+            },
+        },
+
+        .vector => |info| (info.len == 0 and @sizeOf(T) == 0) or switch (@typeInfo(info.child)) {
+            .int, .float, .bool => @sizeOf(T) * 8 == @bitSizeOf(info.child) * info.len,
+            else => hasUniqueRepresentation(info.child) and
+                @sizeOf(T) == @sizeOf(info.child) * info.len,
+        },
     };
 }
 
@@ -1208,10 +1225,33 @@ test hasUniqueRepresentation {
 
     try testing.expect(!hasUniqueRepresentation(TestUnion4));
 
+    const TestUnion5 = union(enum) {
+        a: u32,
+    };
+
+    try testing.expect(hasUniqueRepresentation(TestUnion5));
+
+    const TestUnion6 = packed union {
+        a: u32,
+        b: f32,
+    };
+
+    try testing.expect(hasUniqueRepresentation(TestUnion6));
+
+    const TestUnion7 = extern union {
+        a: u32,
+    };
+
+    try testing.expect(hasUniqueRepresentation(TestUnion7));
+
+    const TestUnion8 = packed union {};
+
+    try testing.expect(!hasUniqueRepresentation(TestUnion8));
+
     inline for ([_]type{ i0, u8, i16, u32, i64 }) |T| {
         try testing.expect(hasUniqueRepresentation(T));
     }
-    inline for ([_]type{ i1, u9, i17, u33, i24 }) |T| {
+    inline for ([_]type{ i1, u9, i17, u33, i25 }) |T| {
         try testing.expect(!hasUniqueRepresentation(T));
     }
 
@@ -1228,6 +1268,10 @@ test hasUniqueRepresentation {
     try testing.expect(hasUniqueRepresentation(@Vector(std.simd.suggestVectorLength(u8) orelse 1, u8)));
     try testing.expect(@sizeOf(@Vector(3, u8)) == 3 or !hasUniqueRepresentation(@Vector(3, u8)));
 
+    if (std.simd.suggestVectorLength(bool)) |len| {
+        try testing.expect(hasUniqueRepresentation(@Vector(len, bool)));
+    }
+
     const StructWithComptimeFields = struct {
         comptime should_be_ignored: u64 = 42,
         comptime should_also_be_ignored: [*:0]const u8 = "hope you're having a good day :)",
@@ -1235,4 +1279,7 @@ test hasUniqueRepresentation {
     };
 
     try testing.expect(hasUniqueRepresentation(StructWithComptimeFields));
+
+    try testing.expect(hasUniqueRepresentation(enum(u8) { _ }));
+    try testing.expect(!enum(u9) { _ });
 }

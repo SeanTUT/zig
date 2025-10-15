@@ -112,7 +112,6 @@ pub fn print(
             try print(Value.fromInterned(enum_tag.int), writer, level - 1, pt, opt_sema);
             try writer.writeAll(")");
         },
-        .empty_enum_value => try writer.writeAll("(empty enum value)"),
         .float => |float| switch (float.storage) {
             inline else => |x| try writer.print("{d}", .{@as(f64, @floatCast(x))}),
         },
