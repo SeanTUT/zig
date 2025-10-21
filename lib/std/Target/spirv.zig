@@ -35,103 +35,103 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.arbitrary_precision_integers)] = .{
         .llvm_name = null,
         .description = "Enable SPV_INTEL_arbitrary_precision_integers extension and the ArbitraryPrecisionIntegersINTEL capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_5,
         }),
     };
     result[@intFromEnum(Feature.float16)] = .{
         .llvm_name = null,
         .description = "Enable Float16 capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
     result[@intFromEnum(Feature.float64)] = .{
         .llvm_name = null,
         .description = "Enable Float64 capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
     result[@intFromEnum(Feature.generic_pointer)] = .{
         .llvm_name = null,
         .description = "Enable GenericPointer capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
     result[@intFromEnum(Feature.int64)] = .{
         .llvm_name = null,
         .description = "Enable Int64 capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
     result[@intFromEnum(Feature.storage_push_constant16)] = .{
         .llvm_name = null,
         .description = "Enable SPV_KHR_16bit_storage extension and the StoragePushConstant16 capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_3,
         }),
     };
     result[@intFromEnum(Feature.v1_0)] = .{
         .llvm_name = null,
         .description = "Enable version 1.0",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.v1_1)] = .{
         .llvm_name = null,
         .description = "Enable version 1.1",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
     result[@intFromEnum(Feature.v1_2)] = .{
         .llvm_name = null,
         .description = "Enable version 1.2",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_1,
         }),
     };
     result[@intFromEnum(Feature.v1_3)] = .{
         .llvm_name = null,
         .description = "Enable version 1.3",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_2,
         }),
     };
     result[@intFromEnum(Feature.v1_4)] = .{
         .llvm_name = null,
         .description = "Enable version 1.4",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_3,
         }),
     };
     result[@intFromEnum(Feature.v1_5)] = .{
         .llvm_name = null,
         .description = "Enable version 1.5",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_4,
         }),
     };
     result[@intFromEnum(Feature.v1_6)] = .{
         .llvm_name = null,
         .description = "Enable version 1.6",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_5,
         }),
     };
     result[@intFromEnum(Feature.variable_pointers)] = .{
         .llvm_name = null,
         .description = "Enable SPV_KHR_physical_storage_buffer extension and the PhysicalStorageBufferAddresses capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
     result[@intFromEnum(Feature.vector16)] = .{
         .llvm_name = null,
         .description = "Enable Vector16 capability",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .v1_0,
         }),
     };
@@ -147,19 +147,19 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const opencl_v2: CpuModel = .{
         .name = "opencl_v2",
         .llvm_name = null,
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .v1_2,
         }),
     };
     pub const vulkan_v1_2: CpuModel = .{
         .name = "vulkan_v1_2",
         .llvm_name = null,
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .v1_5,
         }),
     };

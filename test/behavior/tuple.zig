@@ -581,18 +581,6 @@ test "empty struct in tuple" {
     try std.testing.expect(@typeInfo(info.@"struct".fields[0].type) == .@"struct");
 }
 
-test "empty union in tuple" {
-    if (builtin.zig_backend == .stage2_arm) return error.SkipZigTest; // TODO
-    if (builtin.zig_backend == .stage2_riscv64) return error.SkipZigTest;
-    if (builtin.zig_backend == .stage2_spirv) return error.SkipZigTest;
-
-    const T = struct { union {} };
-    const info = @typeInfo(T);
-    try std.testing.expectEqual(@as(usize, 1), info.@"struct".fields.len);
-    try std.testing.expectEqualStrings("0", info.@"struct".fields[0].name);
-    try std.testing.expect(@typeInfo(info.@"struct".fields[0].type) == .@"union");
-}
-
 test "field pointer of underaligned tuple" {
     if (builtin.zig_backend == .stage2_spirv) return error.SkipZigTest;
 

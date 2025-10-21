@@ -15,8 +15,12 @@ const GeneratedTagUnion = union(@typeInfo(BaseUnion).@"union".tag_type.?) {
     a,
 };
 
-export fn entry() usize {
-    return @sizeOf(Union) + @sizeOf(GeneratedTagUnion);
+export fn entry1() usize {
+    return @sizeOf(Union);
+}
+
+export fn entry2() usize {
+    return @sizeOf(GeneratedTagUnion);
 }
 
 // error

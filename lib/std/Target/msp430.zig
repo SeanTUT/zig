@@ -23,22 +23,22 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.ext)] = .{
         .llvm_name = "ext",
         .description = "Enable MSP430-X extensions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.hwmult16)] = .{
         .llvm_name = "hwmult16",
         .description = "Enable 16-bit hardware multiplier",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.hwmult32)] = .{
         .llvm_name = "hwmult32",
         .description = "Enable 32-bit hardware multiplier",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.hwmultf5)] = .{
         .llvm_name = "hwmultf5",
         .description = "Enable F5 series hardware multiplier",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -52,17 +52,17 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const msp430: CpuModel = .{
         .name = "msp430",
         .llvm_name = "msp430",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const msp430x: CpuModel = .{
         .name = "msp430x",
         .llvm_name = "msp430x",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ext,
         }),
     };

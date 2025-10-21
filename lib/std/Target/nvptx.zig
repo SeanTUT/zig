@@ -85,332 +85,332 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.ptx32)] = .{
         .llvm_name = "ptx32",
         .description = "Use PTX version 32",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx40)] = .{
         .llvm_name = "ptx40",
         .description = "Use PTX version 40",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx41)] = .{
         .llvm_name = "ptx41",
         .description = "Use PTX version 41",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx42)] = .{
         .llvm_name = "ptx42",
         .description = "Use PTX version 42",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx43)] = .{
         .llvm_name = "ptx43",
         .description = "Use PTX version 43",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx50)] = .{
         .llvm_name = "ptx50",
         .description = "Use PTX version 50",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx60)] = .{
         .llvm_name = "ptx60",
         .description = "Use PTX version 60",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx61)] = .{
         .llvm_name = "ptx61",
         .description = "Use PTX version 61",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx62)] = .{
         .llvm_name = "ptx62",
         .description = "Use PTX version 62",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx63)] = .{
         .llvm_name = "ptx63",
         .description = "Use PTX version 63",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx64)] = .{
         .llvm_name = "ptx64",
         .description = "Use PTX version 64",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx65)] = .{
         .llvm_name = "ptx65",
         .description = "Use PTX version 65",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx70)] = .{
         .llvm_name = "ptx70",
         .description = "Use PTX version 70",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx71)] = .{
         .llvm_name = "ptx71",
         .description = "Use PTX version 71",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx72)] = .{
         .llvm_name = "ptx72",
         .description = "Use PTX version 72",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx73)] = .{
         .llvm_name = "ptx73",
         .description = "Use PTX version 73",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx74)] = .{
         .llvm_name = "ptx74",
         .description = "Use PTX version 74",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx75)] = .{
         .llvm_name = "ptx75",
         .description = "Use PTX version 75",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx76)] = .{
         .llvm_name = "ptx76",
         .description = "Use PTX version 76",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx77)] = .{
         .llvm_name = "ptx77",
         .description = "Use PTX version 77",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx78)] = .{
         .llvm_name = "ptx78",
         .description = "Use PTX version 78",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx80)] = .{
         .llvm_name = "ptx80",
         .description = "Use PTX version 80",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx81)] = .{
         .llvm_name = "ptx81",
         .description = "Use PTX version 81",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx82)] = .{
         .llvm_name = "ptx82",
         .description = "Use PTX version 82",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx83)] = .{
         .llvm_name = "ptx83",
         .description = "Use PTX version 83",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx84)] = .{
         .llvm_name = "ptx84",
         .description = "Use PTX version 84",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx85)] = .{
         .llvm_name = "ptx85",
         .description = "Use PTX version 85",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx86)] = .{
         .llvm_name = "ptx86",
         .description = "Use PTX version 86",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx87)] = .{
         .llvm_name = "ptx87",
         .description = "Use PTX version 87",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ptx88)] = .{
         .llvm_name = "ptx88",
         .description = "Use PTX version 88",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_100)] = .{
         .llvm_name = "sm_100",
         .description = "Target SM 100",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_100a)] = .{
         .llvm_name = "sm_100a",
         .description = "Target SM 100a",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_100f)] = .{
         .llvm_name = "sm_100f",
         .description = "Target SM 100f",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_101)] = .{
         .llvm_name = "sm_101",
         .description = "Target SM 101",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_101a)] = .{
         .llvm_name = "sm_101a",
         .description = "Target SM 101a",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_101f)] = .{
         .llvm_name = "sm_101f",
         .description = "Target SM 101f",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_103)] = .{
         .llvm_name = "sm_103",
         .description = "Target SM 103",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_103a)] = .{
         .llvm_name = "sm_103a",
         .description = "Target SM 103a",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_103f)] = .{
         .llvm_name = "sm_103f",
         .description = "Target SM 103f",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_120)] = .{
         .llvm_name = "sm_120",
         .description = "Target SM 120",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_120a)] = .{
         .llvm_name = "sm_120a",
         .description = "Target SM 120a",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_120f)] = .{
         .llvm_name = "sm_120f",
         .description = "Target SM 120f",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_121)] = .{
         .llvm_name = "sm_121",
         .description = "Target SM 121",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_121a)] = .{
         .llvm_name = "sm_121a",
         .description = "Target SM 121a",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_121f)] = .{
         .llvm_name = "sm_121f",
         .description = "Target SM 121f",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_20)] = .{
         .llvm_name = "sm_20",
         .description = "Target SM 20",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_21)] = .{
         .llvm_name = "sm_21",
         .description = "Target SM 21",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_30)] = .{
         .llvm_name = "sm_30",
         .description = "Target SM 30",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_32)] = .{
         .llvm_name = "sm_32",
         .description = "Target SM 32",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_35)] = .{
         .llvm_name = "sm_35",
         .description = "Target SM 35",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_37)] = .{
         .llvm_name = "sm_37",
         .description = "Target SM 37",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_50)] = .{
         .llvm_name = "sm_50",
         .description = "Target SM 50",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_52)] = .{
         .llvm_name = "sm_52",
         .description = "Target SM 52",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_53)] = .{
         .llvm_name = "sm_53",
         .description = "Target SM 53",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_60)] = .{
         .llvm_name = "sm_60",
         .description = "Target SM 60",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_61)] = .{
         .llvm_name = "sm_61",
         .description = "Target SM 61",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_62)] = .{
         .llvm_name = "sm_62",
         .description = "Target SM 62",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_70)] = .{
         .llvm_name = "sm_70",
         .description = "Target SM 70",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_72)] = .{
         .llvm_name = "sm_72",
         .description = "Target SM 72",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_75)] = .{
         .llvm_name = "sm_75",
         .description = "Target SM 75",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_80)] = .{
         .llvm_name = "sm_80",
         .description = "Target SM 80",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_86)] = .{
         .llvm_name = "sm_86",
         .description = "Target SM 86",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_87)] = .{
         .llvm_name = "sm_87",
         .description = "Target SM 87",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_89)] = .{
         .llvm_name = "sm_89",
         .description = "Target SM 89",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_90)] = .{
         .llvm_name = "sm_90",
         .description = "Target SM 90",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sm_90a)] = .{
         .llvm_name = "sm_90a",
         .description = "Target SM 90a",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -424,7 +424,7 @@ pub const cpu = struct {
     pub const sm_100: CpuModel = .{
         .name = "sm_100",
         .llvm_name = "sm_100",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx86,
             .sm_100,
         }),
@@ -432,7 +432,7 @@ pub const cpu = struct {
     pub const sm_100a: CpuModel = .{
         .name = "sm_100a",
         .llvm_name = "sm_100a",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx86,
             .sm_100a,
         }),
@@ -440,7 +440,7 @@ pub const cpu = struct {
     pub const sm_100f: CpuModel = .{
         .name = "sm_100f",
         .llvm_name = "sm_100f",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_100f,
         }),
@@ -448,7 +448,7 @@ pub const cpu = struct {
     pub const sm_101: CpuModel = .{
         .name = "sm_101",
         .llvm_name = "sm_101",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx86,
             .sm_101,
         }),
@@ -456,7 +456,7 @@ pub const cpu = struct {
     pub const sm_101a: CpuModel = .{
         .name = "sm_101a",
         .llvm_name = "sm_101a",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx86,
             .sm_101a,
         }),
@@ -464,7 +464,7 @@ pub const cpu = struct {
     pub const sm_101f: CpuModel = .{
         .name = "sm_101f",
         .llvm_name = "sm_101f",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_101f,
         }),
@@ -472,7 +472,7 @@ pub const cpu = struct {
     pub const sm_103: CpuModel = .{
         .name = "sm_103",
         .llvm_name = "sm_103",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_103,
         }),
@@ -480,7 +480,7 @@ pub const cpu = struct {
     pub const sm_103a: CpuModel = .{
         .name = "sm_103a",
         .llvm_name = "sm_103a",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_103a,
         }),
@@ -488,7 +488,7 @@ pub const cpu = struct {
     pub const sm_103f: CpuModel = .{
         .name = "sm_103f",
         .llvm_name = "sm_103f",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_103f,
         }),
@@ -496,7 +496,7 @@ pub const cpu = struct {
     pub const sm_120: CpuModel = .{
         .name = "sm_120",
         .llvm_name = "sm_120",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx87,
             .sm_120,
         }),
@@ -504,7 +504,7 @@ pub const cpu = struct {
     pub const sm_120a: CpuModel = .{
         .name = "sm_120a",
         .llvm_name = "sm_120a",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx87,
             .sm_120a,
         }),
@@ -512,7 +512,7 @@ pub const cpu = struct {
     pub const sm_120f: CpuModel = .{
         .name = "sm_120f",
         .llvm_name = "sm_120f",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_120f,
         }),
@@ -520,7 +520,7 @@ pub const cpu = struct {
     pub const sm_121: CpuModel = .{
         .name = "sm_121",
         .llvm_name = "sm_121",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_121,
         }),
@@ -528,7 +528,7 @@ pub const cpu = struct {
     pub const sm_121a: CpuModel = .{
         .name = "sm_121a",
         .llvm_name = "sm_121a",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_121a,
         }),
@@ -536,7 +536,7 @@ pub const cpu = struct {
     pub const sm_121f: CpuModel = .{
         .name = "sm_121f",
         .llvm_name = "sm_121f",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx88,
             .sm_121f,
         }),
@@ -544,7 +544,7 @@ pub const cpu = struct {
     pub const sm_20: CpuModel = .{
         .name = "sm_20",
         .llvm_name = "sm_20",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx32,
             .sm_20,
         }),
@@ -552,7 +552,7 @@ pub const cpu = struct {
     pub const sm_21: CpuModel = .{
         .name = "sm_21",
         .llvm_name = "sm_21",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx32,
             .sm_21,
         }),
@@ -560,14 +560,14 @@ pub const cpu = struct {
     pub const sm_30: CpuModel = .{
         .name = "sm_30",
         .llvm_name = "sm_30",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .sm_30,
         }),
     };
     pub const sm_32: CpuModel = .{
         .name = "sm_32",
         .llvm_name = "sm_32",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx40,
             .sm_32,
         }),
@@ -575,7 +575,7 @@ pub const cpu = struct {
     pub const sm_35: CpuModel = .{
         .name = "sm_35",
         .llvm_name = "sm_35",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx32,
             .sm_35,
         }),
@@ -583,7 +583,7 @@ pub const cpu = struct {
     pub const sm_37: CpuModel = .{
         .name = "sm_37",
         .llvm_name = "sm_37",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx41,
             .sm_37,
         }),
@@ -591,7 +591,7 @@ pub const cpu = struct {
     pub const sm_50: CpuModel = .{
         .name = "sm_50",
         .llvm_name = "sm_50",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx40,
             .sm_50,
         }),
@@ -599,7 +599,7 @@ pub const cpu = struct {
     pub const sm_52: CpuModel = .{
         .name = "sm_52",
         .llvm_name = "sm_52",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx41,
             .sm_52,
         }),
@@ -607,7 +607,7 @@ pub const cpu = struct {
     pub const sm_53: CpuModel = .{
         .name = "sm_53",
         .llvm_name = "sm_53",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx42,
             .sm_53,
         }),
@@ -615,7 +615,7 @@ pub const cpu = struct {
     pub const sm_60: CpuModel = .{
         .name = "sm_60",
         .llvm_name = "sm_60",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx50,
             .sm_60,
         }),
@@ -623,7 +623,7 @@ pub const cpu = struct {
     pub const sm_61: CpuModel = .{
         .name = "sm_61",
         .llvm_name = "sm_61",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx50,
             .sm_61,
         }),
@@ -631,7 +631,7 @@ pub const cpu = struct {
     pub const sm_62: CpuModel = .{
         .name = "sm_62",
         .llvm_name = "sm_62",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx50,
             .sm_62,
         }),
@@ -639,7 +639,7 @@ pub const cpu = struct {
     pub const sm_70: CpuModel = .{
         .name = "sm_70",
         .llvm_name = "sm_70",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx60,
             .sm_70,
         }),
@@ -647,7 +647,7 @@ pub const cpu = struct {
     pub const sm_72: CpuModel = .{
         .name = "sm_72",
         .llvm_name = "sm_72",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx61,
             .sm_72,
         }),
@@ -655,7 +655,7 @@ pub const cpu = struct {
     pub const sm_75: CpuModel = .{
         .name = "sm_75",
         .llvm_name = "sm_75",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx63,
             .sm_75,
         }),
@@ -663,7 +663,7 @@ pub const cpu = struct {
     pub const sm_80: CpuModel = .{
         .name = "sm_80",
         .llvm_name = "sm_80",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx70,
             .sm_80,
         }),
@@ -671,7 +671,7 @@ pub const cpu = struct {
     pub const sm_86: CpuModel = .{
         .name = "sm_86",
         .llvm_name = "sm_86",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx71,
             .sm_86,
         }),
@@ -679,7 +679,7 @@ pub const cpu = struct {
     pub const sm_87: CpuModel = .{
         .name = "sm_87",
         .llvm_name = "sm_87",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx74,
             .sm_87,
         }),
@@ -687,7 +687,7 @@ pub const cpu = struct {
     pub const sm_89: CpuModel = .{
         .name = "sm_89",
         .llvm_name = "sm_89",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx78,
             .sm_89,
         }),
@@ -695,7 +695,7 @@ pub const cpu = struct {
     pub const sm_90: CpuModel = .{
         .name = "sm_90",
         .llvm_name = "sm_90",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx78,
             .sm_90,
         }),
@@ -703,7 +703,7 @@ pub const cpu = struct {
     pub const sm_90a: CpuModel = .{
         .name = "sm_90a",
         .llvm_name = "sm_90a",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .ptx80,
             .sm_90a,
         }),

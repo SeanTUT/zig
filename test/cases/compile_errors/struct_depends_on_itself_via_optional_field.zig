@@ -5,8 +5,8 @@ const AstObject = union {
     lhsExpr: LhsExpr,
 };
 export fn entry() void {
-    const lhsExpr = LhsExpr{ .rhsExpr = null };
-    const obj = AstObject{ .lhsExpr = lhsExpr };
+    const lhsExpr: LhsExpr = .{ .rhsExpr = null };
+    const obj: AstObject = .{ .lhsExpr = lhsExpr };
     _ = obj;
 }
 

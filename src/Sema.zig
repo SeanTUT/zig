@@ -2216,12 +2216,12 @@ pub fn setupErrorReturnTrace(sema: *Sema, block: *Block, last_arg_index: usize) 
 
     // st.instruction_addresses = &addrs;
     const instruction_addresses_field_name = try ip.getOrPutString(gpa, pt.tid, "instruction_addresses", .no_embedded_nulls);
-    const addr_field_ptr = try sema.fieldPtr(&err_trace_block, src, st_ptr, instruction_addresses_field_name, src, true);
+    const addr_field_ptr = try sema.fieldPtr(&err_trace_block, src, st_ptr, instruction_addresses_field_name, src, .initialize);
     try sema.storePtr2(&err_trace_block, src, addr_field_ptr, src, addrs_ptr, src, .store);
 
     // st.index = 0;
     const index_field_name = try ip.getOrPutString(gpa, pt.tid, "index", .no_embedded_nulls);
-    const index_field_ptr = try sema.fieldPtr(&err_trace_block, src, st_ptr, index_field_name, src, true);
+    const index_field_ptr = try sema.fieldPtr(&err_trace_block, src, st_ptr, index_field_name, src, .initialize);
     try sema.storePtr2(&err_trace_block, src, index_field_ptr, src, .zero_usize, src, .store);
 
     // @errorReturnTrace() = &st;
@@ -3628,8 +3628,10 @@ fn ensureResultUsed(
     const zcu = pt.zcu;
     switch (ty.zigTypeTag(zcu)) {
         .void, .noreturn => return,
-        .error_set => return sema.fail(block, src, "error set is ignored", .{}),
-        .error_union => {
+        .error_set => if (!ty.errorSetIsEmpty(zcu)) {
+            return sema.fail(block, src, "error set is ignored", .{});
+        },
+        .error_union => if (!try ty.isNoReturnLikeSema(pt)) {
             const msg = msg: {
                 const msg = try sema.errMsg(src, "error union is ignored", .{});
                 errdefer msg.destroy(sema.gpa);
@@ -3638,7 +3640,7 @@ fn ensureResultUsed(
             };
             return sema.failWithOwnedErrorMsg(block, msg);
         },
-        else => {
+        else => if (!try ty.isNoReturnLikeSema(pt)) {
             const msg = msg: {
                 const msg = try sema.errMsg(src, "value of type '{f}' ignored", .{ty.fmt(pt)});
                 errdefer msg.destroy(sema.gpa);
@@ -4080,7 +4082,7 @@ fn resolveComptimeKnownAllocPtr(sema: *Sema, block: *Block, alloc: Air.Inst.Ref,
                     .ty = opt_ty.toIntern(),
                     .val = payload_val.toIntern(),
                 } });
-                try sema.storePtrVal(block, LazySrcLoc.unneeded, Value.fromInterned(decl_parent_ptr), Value.fromInterned(opt_val), opt_ty);
+                try sema.storePtrVal(block, .unneeded, Value.fromInterned(decl_parent_ptr), Value.fromInterned(opt_val), opt_ty);
                 break :ptr (try Value.fromInterned(decl_parent_ptr).ptrOptPayload(pt)).toIntern();
             },
             .eu_payload => ptr: {
@@ -4093,7 +4095,7 @@ fn resolveComptimeKnownAllocPtr(sema: *Sema, block: *Block, alloc: Air.Inst.Ref,
                     .ty = eu_ty.toIntern(),
                     .val = .{ .payload = payload_val.toIntern() },
                 } });
-                try sema.storePtrVal(block, LazySrcLoc.unneeded, Value.fromInterned(decl_parent_ptr), Value.fromInterned(eu_val), eu_ty);
+                try sema.storePtrVal(block, .unneeded, Value.fromInterned(decl_parent_ptr), Value.fromInterned(eu_val), eu_ty);
                 break :ptr (try Value.fromInterned(decl_parent_ptr).ptrEuPayload(pt)).toIntern();
             },
             .field => |idx| ptr: {
@@ -5403,12 +5405,14 @@ fn zirStoreNode(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError!v
 
     const ptr_src = block.src(.{ .node_offset_store_ptr = inst_data.src_node });
     const operand_src = block.src(.{ .node_offset_store_operand = inst_data.src_node });
+
     const air_tag: Air.Inst.Tag = if (is_ret)
         .ret_ptr
     else if (block.wantSafety())
         .store_safe
     else
         .store;
+
     return sema.storePtr2(block, src, ptr, ptr_src, operand, operand_src, air_tag);
 }
 
@@ -8404,13 +8408,7 @@ fn zirIntFromEnum(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError
     const enum_tag_ty = sema.typeOf(enum_tag);
     const int_tag_ty = enum_tag_ty.intTagType(zcu);
 
-    // TODO: use correct solution
-    // https://github.com/ziglang/zig/issues/15909
-    if (enum_tag_ty.enumFieldCount(zcu) == 0 and !enum_tag_ty.isNonexhaustiveEnum(zcu)) {
-        return sema.fail(block, operand_src, "cannot use @intFromEnum on empty enum '{f}'", .{
-            enum_tag_ty.fmt(pt),
-        });
-    }
+    assert(int_tag_ty.zigTypeTag(zcu) != .noreturn);
 
     if (try sema.typeHasOnePossibleValue(enum_tag_ty)) |opv| {
         return Air.internedToRef((try pt.getCoerced(opv, int_tag_ty)).toIntern());
@@ -9759,7 +9757,7 @@ fn zirFieldPtr(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError!Ai
         .no_embedded_nulls,
     );
     const object_ptr = try sema.resolveInst(extra.lhs);
-    return sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, false);
+    return sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, .access);
 }
 
 fn zirStructInitFieldPtr(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError!Air.Inst.Ref {
@@ -9782,7 +9780,7 @@ fn zirStructInitFieldPtr(sema: *Sema, block: *Block, inst: Zir.Inst.Index) Compi
     const struct_ty = sema.typeOf(object_ptr).childType(zcu);
     switch (struct_ty.zigTypeTag(zcu)) {
         .@"struct", .@"union" => {
-            return sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, true);
+            return sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, .initialize);
         },
         else => {
             return sema.failWithStructInitNotSupported(block, src, struct_ty);
@@ -9813,7 +9811,7 @@ fn zirFieldPtrNamed(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileErr
     const extra = sema.code.extraData(Zir.Inst.FieldNamed, inst_data.payload_index).data;
     const object_ptr = try sema.resolveInst(extra.lhs);
     const field_name = try sema.resolveConstStringIntern(block, field_name_src, extra.field_name, .{ .simple = .field_name });
-    return sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, false);
+    return sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, .access);
 }
 
 fn zirIntCast(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError!Air.Inst.Ref {
@@ -18704,20 +18702,22 @@ fn zirRetImplicit(
 
     const operand = try sema.resolveInst(inst_data.operand);
     const ret_ty_src = block.src(.{ .node_offset_fn_type_ret_ty = .zero });
-    const base_ty = sema.fn_ret_ty.baseType(zcu);
-    if (base_ty.zigTypeTag(zcu) != .void) {
+
+    if (sema.fn_ret_ty.isNoReturn(zcu)) {
         const msg = msg: {
-            const msg = try sema.errMsg(ret_ty_src, "function with non-void return type '{f}' implicitly returns", .{
-                sema.fn_ret_ty.fmt(pt),
-            });
+            const msg = try sema.errMsg(ret_ty_src, "function declared 'noreturn' implicitly returns", .{});
             errdefer msg.destroy(sema.gpa);
             try sema.errNote(r_brace_src, msg, "control flow reaches end of body here", .{});
             break :msg msg;
         };
         return sema.failWithOwnedErrorMsg(block, msg);
-    } else if (base_ty.isNoReturn(zcu)) {
+    }
+
+    const base_ty = sema.fn_ret_ty.baseType(zcu);
+
+    if (base_ty.zigTypeTag(zcu) != .void) {
         const msg = msg: {
-            const msg = try sema.errMsg(ret_ty_src, "function declared '{f}' implicitly returns", .{
+            const msg = try sema.errMsg(ret_ty_src, "function with non-void return type '{f}' implicitly returns", .{
                 sema.fn_ret_ty.fmt(pt),
             });
             errdefer msg.destroy(sema.gpa);
@@ -19477,7 +19477,7 @@ fn zirStructInit(
         const tag_val = try pt.enumValueFieldIndex(tag_ty, field_index);
         const field_ty: Type = .fromInterned(zcu.typeToUnion(resolved_ty).?.field_types.get(ip)[field_index]);
 
-        try sema.checkNoReturnUnionInit(block, src, resolved_ty, field_index);
+        try sema.checkNoReturnUnionField(block, src, resolved_ty, field_index, .initialize);
 
         const uncoerced_init_inst = try sema.resolveInst(item.data.init);
         const init_inst = try sema.coerce(block, field_ty, uncoerced_init_inst, field_src);
@@ -19510,7 +19510,7 @@ fn zirStructInit(
             });
             const alloc = try block.addTy(.alloc, alloc_ty);
             const base_ptr = try sema.optEuBasePtrInit(block, alloc, src);
-            const field_ptr = try sema.unionFieldPtr(block, field_src, base_ptr, field_name, field_src, resolved_ty, true);
+            const field_ptr = try sema.unionFieldPtr(block, field_src, base_ptr, field_name, field_src, resolved_ty, .initialize);
             try sema.storePtr(block, src, field_ptr, init_inst);
             if ((try sema.typeHasOnePossibleValue(tag_ty)) == null) {
                 const new_tag = Air.internedToRef(tag_val.toIntern());
@@ -23533,7 +23533,20 @@ fn checkAllScalarsDefined(sema: *Sema, block: *Block, src: LazySrcLoc, val: Valu
     }
 }
 
-fn checkNoReturnUnionInit(sema: *Sema, block: *Block, src: LazySrcLoc, union_ty: Type, field_index: usize) CompileError!void {
+const DerefUsage = enum {
+    access,
+    assign,
+    initialize,
+};
+
+fn checkNoReturnUnionField(
+    sema: *Sema,
+    block: *Block,
+    src: LazySrcLoc,
+    union_ty: Type,
+    field_index: usize,
+    usage: DerefUsage,
+) CompileError!void {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ip = &zcu.intern_pool;
@@ -23541,26 +23554,23 @@ fn checkNoReturnUnionInit(sema: *Sema, block: *Block, src: LazySrcLoc, union_ty:
     const field_ty: Type = .fromInterned(union_info.field_types.get(ip)[field_index]);
     if (try field_ty.isNoReturnLikeSema(pt)) {
         return sema.failWithOwnedErrorMsg(block, msg: {
-            const msg = try problem: {
-                if (field_ty.zigTypeTag(zcu) == .noreturn) {
-                    // If the type is a direct noreturn,
-                    // be more direct about the problem
-                    break :problem sema.errMsg(src, "cannot initialize 'noreturn' field of union", .{});
-                } else {
-                    // If the type is noreturn-like
-                    // but not actually noreturn,
-                    // explain that the type is noreturn-like
-                    break :problem sema.errMsg(
-                        src,
-                        "cannot initialize union field of noreturn-like type '{f}'",
-                        .{field_ty.fmt(pt)},
-                    );
-                }
+            const usage_str = switch (usage) {
+                .access => "access",
+                .assign => "assign to",
+                .initialize => "initialize",
             };
+
+            const field_kind = switch (field_ty.zigTypeTag(zcu)) {
+                .noreturn => "'noreturn'",
+                else => "noreturn-like",
+            };
+
+            const msg = try sema.errMsg(src, "cannot {s} {s} field of union", .{ usage_str, field_kind });
             errdefer msg.destroy(sema.gpa);
 
             const field_name = union_info.loadTagType(ip).names.get(ip)[field_index];
-            try sema.addFieldErrNote(union_ty, field_index, msg, "field '{f}' declared here", .{
+            try sema.addFieldErrNote(union_ty, field_index, msg, "'{f}' field '{f}' declared here", .{
+                field_ty.fmt(pt),
                 field_name.fmt(ip),
             });
             try sema.addDeclaredHereNote(msg, union_ty);
@@ -23569,31 +23579,45 @@ fn checkNoReturnUnionInit(sema: *Sema, block: *Block, src: LazySrcLoc, union_ty:
     }
 }
 
-fn failWithNoReturnDeref(sema: *Sema, block: *Block, src: LazySrcLoc, child_ty: Type) CompileError {
+fn failWithNoReturnDeref(
+    sema: *Sema,
+    block: *Block,
+    src: LazySrcLoc,
+    child_ty: Type,
+    usage_hint: DerefUsage,
+) CompileError {
     const pt = sema.pt;
     const zcu = pt.zcu;
     assert(child_ty.isNoReturnLikeSema(pt) catch unreachable);
-    return sema.failWithOwnedErrorMsg(block, msg: {
+    return sema.failWithOwnedErrorMsg(block, try msg: {
         if (child_ty.zigTypeTag(zcu) == .noreturn) {
-            // If the child is a direct noreturn,
-            // be more direct about the problem
-            break :msg try sema.errMsg(src, "dereference of pointer to 'noreturn'", .{});
+            break :msg sema.errMsg(src, "cannot {s} 'noreturn'", .{switch (usage_hint) {
+                .access => "access value of type",
+                .assign => "assign to",
+                .initialize => "store to",
+            }});
         } else {
-            // If the child is noreturn-like
-            // but not actually noreturn,
-            // explain that the type is noreturn-like
-            break :msg try sema.errMsg(
-                src,
-                "dereference of pointer to noreturn-like type '{f}'",
-                .{child_ty.fmt(pt)},
-            );
+            break :msg sema.errMsg(src, "cannot {s} noreturn-like type '{f}'", .{
+                switch (usage_hint) {
+                    .access => "access value of",
+                    .assign => "assign to",
+                    .initialize => "store to",
+                },
+                child_ty.fmt(pt),
+            });
         }
     });
 }
 
-fn checkNoReturnDeref(sema: *Sema, block: *Block, src: LazySrcLoc, child_ty: Type) CompileError!void {
+fn checkNoReturnDeref(
+    sema: *Sema,
+    block: *Block,
+    src: LazySrcLoc,
+    child_ty: Type,
+    usage_hint: DerefUsage,
+) CompileError!void {
     if (try child_ty.isNoReturnLikeSema(sema.pt)) {
-        return sema.failWithNoReturnDeref(block, src, child_ty);
+        return sema.failWithNoReturnDeref(block, src, child_ty, usage_hint);
     }
 }
 
@@ -26809,7 +26833,7 @@ fn fieldPtrLoad(
             return fieldVal(sema, block, src, object, field_name, field_name_src);
         }
     }
-    const field_ptr = try sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, false);
+    const field_ptr = try sema.fieldPtr(block, src, object_ptr, field_name, field_name_src, .access);
     return analyzeLoad(sema, block, src, field_ptr, field_name_src);
 }
 
@@ -26841,7 +26865,7 @@ fn fieldVal(
         object_ty;
 
     if (is_pointer_to) {
-        try sema.checkNoReturnDeref(block, src, inner_ty);
+        try sema.checkNoReturnDeref(block, src, inner_ty, .access);
     }
 
     switch (inner_ty.zigTypeTag(zcu)) {
@@ -26985,7 +27009,7 @@ fn fieldVal(
         },
         .@"union" => if (is_pointer_to) {
             // Avoid loading the entire union by fetching a pointer and loading that
-            const field_ptr = try sema.unionFieldPtr(block, src, object, field_name, field_name_src, inner_ty, false);
+            const field_ptr = try sema.unionFieldPtr(block, src, object, field_name, field_name_src, inner_ty, .access);
             return sema.analyzeLoad(block, src, field_ptr, object_src);
         } else {
             return sema.unionFieldVal(block, src, object, field_name, field_name_src, inner_ty);
@@ -27002,7 +27026,7 @@ fn fieldPtr(
     object_ptr: Air.Inst.Ref,
     field_name: InternPool.NullTerminatedString,
     field_name_src: LazySrcLoc,
-    initializing: bool,
+    usage_hint: DerefUsage,
 ) CompileError!Air.Inst.Ref {
     // When editing this function, note that there is corresponding logic to be edited
     // in `fieldVal`. This function takes a pointer and returns a pointer.
@@ -27026,6 +27050,8 @@ fn fieldPtr(
         object_ty.childType(zcu)
     else
         object_ty;
+
+    try sema.checkNoReturnDeref(block, src, inner_ty, usage_hint);
 
     switch (inner_ty.zigTypeTag(zcu)) {
         .array => {
@@ -27128,7 +27154,7 @@ fn fieldPtr(
             }
         },
         .type => {
-            _ = try sema.resolveConstDefinedValue(block, LazySrcLoc.unneeded, object_ptr, undefined);
+            _ = try sema.resolveConstDefinedValue(block, .unneeded, object_ptr, undefined);
             const result = try sema.analyzeLoad(block, src, object_ptr, object_ptr_src);
             const inner = if (is_pointer_to)
                 try sema.analyzeLoad(block, src, result, object_ptr_src)
@@ -27207,6 +27233,7 @@ fn fieldPtr(
                 try sema.analyzeLoad(block, src, object_ptr, object_ptr_src)
             else
                 object_ptr;
+            const initializing = usage_hint == .initialize;
             const field_ptr = try sema.structFieldPtr(block, src, inner_ptr, field_name, field_name_src, inner_ty, initializing);
             try sema.checkKnownAllocPtr(block, inner_ptr, field_ptr);
             return field_ptr;
@@ -27216,7 +27243,7 @@ fn fieldPtr(
                 try sema.analyzeLoad(block, src, object_ptr, object_ptr_src)
             else
                 object_ptr;
-            const field_ptr = try sema.unionFieldPtr(block, src, inner_ptr, field_name, field_name_src, inner_ty, initializing);
+            const field_ptr = try sema.unionFieldPtr(block, src, inner_ptr, field_name, field_name_src, inner_ty, usage_hint);
             try sema.checkKnownAllocPtr(block, inner_ptr, field_ptr);
             return field_ptr;
         },
@@ -27257,7 +27284,7 @@ fn fieldCallBind(
     else
         return sema.fail(block, raw_ptr_src, "expected single pointer, found '{f}'", .{raw_ptr_ty.fmt(pt)});
 
-    try sema.checkNoReturnDeref(block, src, inner_ty);
+    try sema.checkNoReturnDeref(block, src, inner_ty, .access);
 
     // Optionally dereference a second pointer to get the concrete type.
     const is_double_ptr = inner_ty.zigTypeTag(zcu) == .pointer and inner_ty.ptrSize(zcu) == .one;
@@ -27300,7 +27327,7 @@ fn fieldCallBind(
                 try concrete_ty.resolveFields(pt);
                 const union_obj = zcu.typeToUnion(concrete_ty).?;
                 _ = union_obj.loadTagType(ip).nameIndex(ip, field_name) orelse break :find_field;
-                const field_ptr = try unionFieldPtr(sema, block, src, object_ptr, field_name, field_name_src, concrete_ty, false);
+                const field_ptr = try unionFieldPtr(sema, block, src, object_ptr, field_name, field_name_src, concrete_ty, .access);
                 return .{ .direct = try sema.analyzeLoad(block, src, field_ptr, src) };
             },
             .type => {
@@ -27740,7 +27767,7 @@ fn unionFieldPtr(
     field_name: InternPool.NullTerminatedString,
     field_name_src: LazySrcLoc,
     union_ty: Type,
-    initializing: bool,
+    usage: DerefUsage,
 ) CompileError!Air.Inst.Ref {
     const pt = sema.pt;
     const zcu = pt.zcu;
@@ -27773,13 +27800,11 @@ fn unionFieldPtr(
     });
     const enum_field_index: u32 = @intCast(Type.fromInterned(union_obj.enum_tag_ty).enumFieldIndex(field_name, zcu).?);
 
-    if (initializing) {
-        try sema.checkNoReturnUnionInit(block, src, union_ty, enum_field_index);
-    }
+    try sema.checkNoReturnUnionField(block, src, union_ty, enum_field_index, usage);
 
     if (try sema.resolveDefinedValue(block, src, union_ptr)) |union_ptr_val| ct: {
         switch (union_obj.flagsUnordered(ip).layout) {
-            .auto => if (initializing) {
+            .auto => if (usage == .initialize) {
                 if (!sema.isComptimeMutablePtr(union_ptr_val)) {
                     // The initialization is a runtime operation.
                     break :ct;
@@ -27824,24 +27849,34 @@ fn unionFieldPtr(
         if (union_ty.containerLayout(zcu) != .auto) break :tag;
         const tag_ty: Type = .fromInterned(union_obj.enum_tag_ty);
         if (try sema.typeHasOnePossibleValue(tag_ty) != null) break :tag;
+
+        // Intentionally omit sema from this check,
+        // as semantic analysis should never be done here.
+        if (tag_ty.isNoReturn(zcu)) break :tag;
+
         // There is a hypothetical non-trivial tag. We must set it even if not there at runtime, but
         // only emit a safety check if it's available at runtime (i.e. it's safety-tagged).
         const want_tag = try pt.enumValueFieldIndex(tag_ty, enum_field_index);
-        if (initializing) {
-            const set_tag_inst = try block.addBinOp(.set_union_tag, union_ptr, .fromValue(want_tag));
-            try sema.checkComptimeKnownStore(block, set_tag_inst, .unneeded); // `unneeded` since this isn't a "proper" store
-        } else if (block.wantSafety() and union_obj.hasTag(ip)) {
-            // The tag exists at runtime (safety tag), so emit a safety check.
-            // TODO would it be better if get_union_tag supported pointers to unions?
-            const union_val = try block.addTyOp(.load, union_ty, union_ptr);
-            const active_tag = try block.addTyOp(.get_union_tag, tag_ty, union_val);
-            try sema.addSafetyCheckInactiveUnionField(block, src, active_tag, .fromValue(want_tag));
+        switch (usage) {
+            .initialize => {
+                const set_tag_inst = try block.addBinOp(.set_union_tag, union_ptr, .fromValue(want_tag));
+                try sema.checkComptimeKnownStore(block, set_tag_inst, .unneeded); // `unneeded` since this isn't a "proper" store
+            },
+            else => if (block.wantSafety() and union_obj.hasTag(ip)) {
+                // The tag exists at runtime (safety tag), so emit a safety check.
+                // TODO would it be better if get_union_tag supported pointers to unions?
+                const union_val = try block.addTyOp(.load, union_ty, union_ptr);
+                const active_tag = try block.addTyOp(.get_union_tag, tag_ty, union_val);
+                try sema.addSafetyCheckInactiveUnionField(block, src, active_tag, .fromValue(want_tag));
+            },
         }
     }
-    if (field_ty.isNoReturn(zcu)) {
+
+    if (field_ty.isNoReturnLike(zcu)) {
         _ = try block.addNoOp(.unreach);
         return .unreachable_value;
     }
+
     return block.addStructFieldPtr(union_ptr, field_index, ptr_field_ty);
 }
 
@@ -27913,7 +27948,7 @@ fn unionFieldVal(
         try sema.addSafetyCheckInactiveUnionField(block, src, active_tag, wanted_tag);
     }
 
-    if (field_ty.isNoReturn(zcu)) {
+    if (field_ty.isNoReturnLike(zcu)) {
         _ = try block.addNoOp(.unreach);
         return .unreachable_value;
     }
@@ -30366,8 +30401,6 @@ fn storePtr2(
 
     const elem_ty = ptr_ty.childType(zcu);
 
-    try sema.checkNoReturnDeref(block, src, elem_ty);
-
     // To generate better code for tuples, we detect a tuple operand here, and
     // analyze field loads and stores directly. This avoids an extra allocation + memcpy
     // which would occur if we used `coerce`.
@@ -30605,7 +30638,7 @@ fn storePtrVal(
     ptr_val: Value,
     operand_val: Value,
     operand_ty: Type,
-) !void {
+) CompileError!void {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ip = &zcu.intern_pool;
@@ -30646,7 +30679,7 @@ fn storePtrVal(
             .{ ptr_ty.fmt(pt), ty.fmt(pt) },
         ),
         .exceeds_host_size => return sema.fail(block, src, "bit-pointer target exceeds host size", .{}),
-        .noreturn_like => |ty| return sema.failWithNoReturnDeref(block, src, ty),
+        .noreturn_like => |ty| return sema.failWithNoReturnDeref(block, src, ty, .assign),
     }
 }
 
@@ -30869,7 +30902,7 @@ fn coerceEnumToUnion(
         const field_ty: Type = .fromInterned(union_obj.field_types.get(ip)[field_index]);
         try field_ty.resolveFields(pt);
 
-        try sema.checkNoReturnUnionInit(block, inst_src, union_ty, field_index);
+        try sema.checkNoReturnUnionField(block, inst_src, union_ty, field_index, .initialize);
 
         const opv = (try sema.typeHasOnePossibleValue(field_ty)) orelse {
             const msg = msg: {
@@ -35711,7 +35744,7 @@ fn unionFields(
                     return sema.failWithOwnedErrorMsg(&block_scope, msg: {
                         const msg = try sema.errMsg(tag_ty_src, "expected noreturn tag type, found '{f}'", .{int_tag_ty.fmt(pt)});
                         errdefer msg.destroy(gpa);
-                        try sema.errNote(tag_ty_src, msg, "union types with no fields must be tagged by noreturn", .{});
+                        try sema.errNote(tag_ty_src, msg, "tagged union types with no fields must be tagged by noreturn", .{});
                         break :msg msg;
                     });
                 }
@@ -36092,21 +36125,10 @@ pub fn typeIsValidReturn(sema: *Sema, ty: Type) SemaError!bool {
     if (ty.toIntern() == .generic_poison_type) return true;
     const pt = sema.pt;
     const zcu = pt.zcu;
-    switch (ty.zigTypeTag(zcu)) {
-        .@"opaque" => return false,
-        .@"union", .@"enum", .error_set => {
-            if (try ty.isNoReturnLikeSema(pt)) {
-                return false;
-            }
-        },
-        .error_union => {
-            if (try ty.isNoReturnLikeSema(pt) and !ty.isNoReturn(zcu)) {
-                return false;
-            }
-        },
-        else => {},
-    }
-    return true;
+    return switch (ty.zigTypeTag(zcu)) {
+        .@"opaque" => false,
+        else => ty.isNoReturn(zcu) or !try ty.isNoReturnLikeSema(pt),
+    };
 }
 
 /// There is another implementation of this in `Type.onePossibleValue`. This one
@@ -36651,21 +36673,18 @@ fn pointerDerefExtra(sema: *Sema, block: *Block, src: LazySrcLoc, ptr_val: Value
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ip = &zcu.intern_pool;
-    switch (try sema.loadComptimePtr(block, src, ptr_val)) {
-        .success => |mv| return .{ .val = try mv.intern(pt, sema.arena) },
-        .runtime_load => return .runtime_load,
-        .undef => return sema.failWithUseOfUndef(block, src, null),
-        .err_payload => |err_name| return sema.fail(block, src, "attempt to unwrap error: {f}", .{err_name.fmt(ip)}),
-        .null_payload => return sema.fail(block, src, "attempt to use null value", .{}),
-        .inactive_union_field => return sema.fail(block, src, "access of inactive union field", .{}),
-        .needed_well_defined => |ty| return .{ .needed_well_defined = ty },
-        .out_of_bounds => |ty| return .{ .out_of_bounds = ty },
-        .exceeds_host_size => return sema.fail(block, src, "bit-pointer target exceeds host size", .{}),
-        .noreturn_like => |ty| return switch (ty.zigTypeTag(zcu)) {
-            .noreturn => sema.fail(block, src, "dereference of pointer to 'noreturn'", .{}),
-            else => sema.fail(block, src, "dereference of pointer to noreturn-like type '{f}'", .{ty.fmt(pt)}),
-        },
-    }
+    return switch (try sema.loadComptimePtr(block, src, ptr_val)) {
+        .success => |mv| .{ .val = try mv.intern(pt, sema.arena) },
+        .runtime_load => .runtime_load,
+        .undef => sema.failWithUseOfUndef(block, src, null),
+        .err_payload => |err_name| sema.fail(block, src, "attempt to unwrap error: {f}", .{err_name.fmt(ip)}),
+        .null_payload => sema.fail(block, src, "attempt to use null value", .{}),
+        .inactive_union_field => sema.fail(block, src, "access of inactive union field", .{}),
+        .needed_well_defined => |ty| .{ .needed_well_defined = ty },
+        .out_of_bounds => |ty| .{ .out_of_bounds = ty },
+        .exceeds_host_size => sema.fail(block, src, "bit-pointer target exceeds host size", .{}),
+        .noreturn_like => |ty| sema.failWithNoReturnDeref(block, src, ty, .access),
+    };
 }
 
 /// Used to convert a u64 value to a usize value, emitting a compile error if the number

@@ -22,17 +22,17 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.alu32)] = .{
         .llvm_name = "alu32",
         .description = "Enable ALU32 instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.dummy)] = .{
         .llvm_name = "dummy",
         .description = "unused feature",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.dwarfris)] = .{
         .llvm_name = "dwarfris",
         .description = "Disable MCAsmInfo DwarfUsesRelocationsAcrossSections",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -46,34 +46,34 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const probe: CpuModel = .{
         .name = "probe",
         .llvm_name = "probe",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const v1: CpuModel = .{
         .name = "v1",
         .llvm_name = "v1",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const v2: CpuModel = .{
         .name = "v2",
         .llvm_name = "v2",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const v3: CpuModel = .{
         .name = "v3",
         .llvm_name = "v3",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .alu32,
         }),
     };
     pub const v4: CpuModel = .{
         .name = "v4",
         .llvm_name = "v4",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .alu32,
         }),
     };

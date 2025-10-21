@@ -12240,7 +12240,164 @@ pub fn funcTypeReturnType(ip: *const InternPool, ty: Index) Index {
     ]);
 }
 
-/// Not to be confused with `isNoReturnLike`
+pub fn errorSetIsEmpty(ip: *const InternPool, ty: Index) bool {
+    switch (ty) {
+        .none => unreachable,
+
+        // simple error set types
+        .adhoc_inferred_error_set_type,
+        .anyerror_type,
+        => return false,
+
+        // simple non error set types
+        .noreturn_type,
+        .anyopaque_type,
+        .anyerror_void_error_union_type,
+        .optional_noreturn_type,
+        .type_type,
+        .enum_literal_type,
+        .comptime_float_type,
+        .comptime_int_type,
+        .null_type,
+        .undefined_type,
+        .void_type,
+        .empty_tuple_type,
+        .bool_type,
+        .c_char_type,
+        .c_int_type,
+        .c_long_type,
+        .c_longdouble_type,
+        .c_longlong_type,
+        .c_short_type,
+        .c_uint_type,
+        .c_ulong_type,
+        .c_ulonglong_type,
+        .c_ushort_type,
+        .f16_type,
+        .f32_type,
+        .f64_type,
+        .f80_type,
+        .f128_type,
+        .i0_type,
+        .u0_type,
+        .u1_type,
+        .i8_type,
+        .u8_type,
+        .i16_type,
+        .u16_type,
+        .u29_type,
+        .i32_type,
+        .u32_type,
+        .i64_type,
+        .u64_type,
+        .u80_type,
+        .i128_type,
+        .u128_type,
+        .u256_type,
+        .usize_type,
+        .isize_type,
+        .vector_16_f16_type,
+        .vector_16_f32_type,
+        .vector_16_i16_type,
+        .vector_16_i32_type,
+        .vector_16_i8_type,
+        .vector_16_u16_type,
+        .vector_16_u32_type,
+        .vector_16_u8_type,
+        .vector_1_u128_type,
+        .vector_1_u256_type,
+        .vector_1_u8_type,
+        .vector_2_f32_type,
+        .vector_2_f64_type,
+        .vector_2_i16_type,
+        .vector_2_i32_type,
+        .vector_2_i64_type,
+        .vector_2_u128_type,
+        .vector_2_u64_type,
+        .vector_2_u8_type,
+        .vector_32_f16_type,
+        .vector_32_i16_type,
+        .vector_32_i8_type,
+        .vector_32_u16_type,
+        .vector_32_u8_type,
+        .vector_4_f16_type,
+        .vector_4_f32_type,
+        .vector_4_f64_type,
+        .vector_4_i16_type,
+        .vector_4_i32_type,
+        .vector_4_i64_type,
+        .vector_4_u16_type,
+        .vector_4_u32_type,
+        .vector_4_u64_type,
+        .vector_4_u8_type,
+        .vector_64_i8_type,
+        .vector_64_u8_type,
+        .vector_8_f16_type,
+        .vector_8_f32_type,
+        .vector_8_f64_type,
+        .vector_8_i16_type,
+        .vector_8_i32_type,
+        .vector_8_i64_type,
+        .vector_8_i8_type,
+        .vector_8_u16_type,
+        .vector_8_u32_type,
+        .vector_8_u64_type,
+        .vector_8_u8_type,
+        .manyptr_const_u8_sentinel_0_type,
+        .manyptr_const_u8_type,
+        .ptr_const_comptime_int_type,
+        .ptr_usize_type,
+        .slice_const_u8_sentinel_0_type,
+        .slice_const_u8_type,
+        .manyptr_u8_type,
+        => unreachable,
+
+        .anyframe_type => unreachable,
+        .generic_poison_type => unreachable,
+
+        // values, not types
+        .bool_false,
+        .bool_true,
+        .undef_bool,
+        .undef,
+        .empty_tuple,
+        .four_u8,
+        .negative_one,
+        .null_value,
+        .one,
+        .one_u1,
+        .one_u8,
+        .one_usize,
+        .undef_u1,
+        .undef_usize,
+        .unreachable_value,
+        .void_value,
+        .zero,
+        .zero_u1,
+        .zero_u8,
+        .zero_usize,
+        => unreachable,
+
+        _ => {
+            const unwrapped_ty = ty.unwrap(ip);
+            const ty_item = unwrapped_ty.getItem(ip);
+            switch (ty_item.tag) {
+                .type_error_set => {
+                    const extras = unwrapped_ty.getExtra(ip).view().items(.@"0");
+                    return extras[ty_item.data + std.meta.fieldIndex(Tag.ErrorSet, "names_len").?] == 0;
+                },
+                .type_inferred_error_set => return switch (ip.funcIesResolvedUnordered(@enumFromInt(unwrapped_ty.getData(ip)))) {
+                    .none, .anyerror_type => false,
+                    else => |t| ip.indexToKey(t).error_set_type.names.len == 0,
+                },
+                else => unreachable,
+            }
+        },
+    }
+}
+
+/// Not to be confused with `isNoReturnLike`.
+/// Only returns true for `noreturn` and `error{}!noreturn`.
 pub fn isNoReturn(ip: *const InternPool, ty: Index) bool {
     switch (ty) {
         .none => unreachable,
@@ -12380,21 +12537,13 @@ pub fn isNoReturn(ip: *const InternPool, ty: Index) bool {
             const unwrapped_ty = ty.unwrap(ip);
             const ty_item = unwrapped_ty.getItem(ip);
             switch (ty_item.tag) {
-                .type_error_set => {
-                    const extras = unwrapped_ty.getExtra(ip).view().items(.@"0");
-                    return extras[ty_item.data + std.meta.fieldIndex(Tag.ErrorSet, "names_len").?] == 0;
-                },
-                .type_inferred_error_set => return switch (ip.funcIesResolvedUnordered(@enumFromInt(unwrapped_ty.getData(ip)))) {
-                    .none, .anyerror_type => false,
-                    else => |t| ip.indexToKey(t).error_set_type.names.len == 0,
-                },
                 .type_error_union => {
                     const extras = unwrapped_ty.getExtra(ip).view().items(.@"0");
                     const error_set_off = ty_item.data + std.meta.fieldIndex(Tag.ErrorUnionType, "error_set_type").?;
                     const payload_type_off = ty_item.data + std.meta.fieldIndex(Tag.ErrorUnionType, "payload_type").?;
                     const error_set_type: Index = @enumFromInt(extras[error_set_off]);
                     const payload_type: Index = @enumFromInt(extras[payload_type_off]);
-                    return ip.isNoReturn(payload_type) and ip.isNoReturn(error_set_type);
+                    return payload_type == .noreturn_type and ip.errorSetIsEmpty(error_set_type);
                 },
                 else => return false,
             }

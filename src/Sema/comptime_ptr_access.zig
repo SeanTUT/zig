@@ -12,7 +12,7 @@ pub const ComptimeLoadResult = union(enum) {
     noreturn_like: Type,
 };
 
-pub fn loadComptimePtr(sema: *Sema, block: *Block, src: LazySrcLoc, ptr: Value) !ComptimeLoadResult {
+pub fn loadComptimePtr(sema: *Sema, block: *Block, src: LazySrcLoc, ptr: Value) CompileError!ComptimeLoadResult {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ptr_info = ptr.typeOf(pt.zcu).ptrInfo(pt.zcu);
@@ -65,7 +65,7 @@ pub fn storeComptimePtr(
     src: LazySrcLoc,
     ptr: Value,
     store_val: Value,
-) !ComptimeStoreResult {
+) CompileError!ComptimeStoreResult {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ptr_info = ptr.typeOf(zcu).ptrInfo(zcu);
@@ -221,7 +221,7 @@ fn loadComptimePtrInner(
     /// If `load_ty` is an array, this is the number of array elements to skip
     /// before `load_ty`. Otherwise, it is ignored and may be `undefined`.
     array_offset: u64,
-) !ComptimeLoadResult {
+) CompileError!ComptimeLoadResult {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ip = &zcu.intern_pool;
@@ -590,7 +590,7 @@ fn prepareComptimePtrStore(
     /// If `store_ty` is an array, this is the number of array elements to skip
     /// before `store_ty`. Otherwise, it is ignored and may be `undefined`.
     array_offset: u64,
-) !ComptimeStoreStrategy {
+) CompileError!ComptimeStoreStrategy {
     const pt = sema.pt;
     const zcu = pt.zcu;
     const ip = &zcu.intern_pool;
@@ -1016,7 +1016,7 @@ fn recursiveIndex(
     sema: *Sema,
     mv: *MutableValue,
     index: *u64,
-) !?struct { *MutableValue, u64 } {
+) SemaError!?struct { *MutableValue, u64 } {
     const pt = sema.pt;
 
     const ty = mv.typeOf(pt.zcu);
@@ -1047,7 +1047,7 @@ fn checkComptimeVarStore(
     block: *Block,
     src: LazySrcLoc,
     alloc_index: ComptimeAllocIndex,
-) !void {
+) SemaError!void {
     const runtime_index = sema.getComptimeAlloc(alloc_index).runtime_index;
     if (@intFromEnum(runtime_index) < @intFromEnum(block.runtime_index)) {
         if (block.runtime_cond) |cond_src| {
@@ -1085,3 +1085,5 @@ const Type = @import("../Type.zig");
 const Value = @import("../Value.zig");
 const Zcu = @import("../Zcu.zig");
 const LazySrcLoc = Zcu.LazySrcLoc;
+const SemaError = Zcu.SemaError;
+const CompileError = Zcu.CompileError;

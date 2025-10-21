@@ -20,7 +20,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.vpu)] = .{
         .llvm_name = "vpu",
         .description = "Enable the VPU",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -34,7 +34,7 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .vpu,
         }),
     };

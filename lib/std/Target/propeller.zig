@@ -20,7 +20,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.p2)] = .{
         .llvm_name = null,
         .description = "Enable Propeller 2",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -34,12 +34,12 @@ pub const cpu = struct {
     pub const p1: CpuModel = .{
         .name = "p1",
         .llvm_name = null,
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const p2: CpuModel = .{
         .name = "p2",
         .llvm_name = null,
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .p2,
         }),
     };

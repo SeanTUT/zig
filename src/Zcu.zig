@@ -2727,11 +2727,11 @@ pub const LazySrcLoc = struct {
     }
 };
 
-pub const SemaError = error{ OutOfMemory, AnalysisFail };
-pub const CompileError = error{
-    OutOfMemory,
+pub const SemaError = Allocator.Error || error{
     /// When this is returned, the compile error for the failure has already been recorded.
     AnalysisFail,
+};
+pub const CompileError = SemaError || error{
     /// In a comptime scope, a return instruction was encountered. This error is only seen when
     /// doing a comptime function call.
     ComptimeReturn,

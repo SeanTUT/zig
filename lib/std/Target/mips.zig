@@ -74,75 +74,75 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.abs2008)] = .{
         .llvm_name = "abs2008",
         .description = "Disable IEEE 754-2008 abs.fmt mode",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.cnmips)] = .{
         .llvm_name = "cnmips",
         .description = "Octeon cnMIPS Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips64r2,
         }),
     };
     result[@intFromEnum(Feature.cnmipsp)] = .{
         .llvm_name = "cnmipsp",
         .description = "Octeon+ cnMIPS Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .cnmips,
         }),
     };
     result[@intFromEnum(Feature.crc)] = .{
         .llvm_name = "crc",
         .description = "Mips R6 CRC ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.dsp)] = .{
         .llvm_name = "dsp",
         .description = "Mips DSP ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.dspr2)] = .{
         .llvm_name = "dspr2",
         .description = "Mips DSP-R2 ASE",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .dsp,
         }),
     };
     result[@intFromEnum(Feature.dspr3)] = .{
         .llvm_name = "dspr3",
         .description = "Mips DSP-R3 ASE",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .dspr2,
         }),
     };
     result[@intFromEnum(Feature.eva)] = .{
         .llvm_name = "eva",
         .description = "Mips EVA ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.fp64)] = .{
         .llvm_name = "fp64",
         .description = "Support 64-bit FP registers",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.fpxx)] = .{
         .llvm_name = "fpxx",
         .description = "Support for FPXX",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.ginv)] = .{
         .llvm_name = "ginv",
         .description = "Mips Global Invalidate ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.gp64)] = .{
         .llvm_name = "gp64",
         .description = "General Purpose Registers are 64-bit wide",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.i6400)] = .{
         .llvm_name = "i6400",
         .description = "MIPS I6400 Processor",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips64r6,
             .msa,
         }),
@@ -150,7 +150,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.i6500)] = .{
         .llvm_name = "i6500",
         .description = "MIPS I6500 Processor",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips64r6,
             .msa,
         }),
@@ -158,34 +158,34 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.long_calls)] = .{
         .llvm_name = "long-calls",
         .description = "Disable use of the jal instruction",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.micromips)] = .{
         .llvm_name = "micromips",
         .description = "microMips mode",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips1)] = .{
         .llvm_name = "mips1",
         .description = "Mips I ISA Support [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips16)] = .{
         .llvm_name = "mips16",
         .description = "Mips16 mode",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips2)] = .{
         .llvm_name = "mips2",
         .description = "Mips II ISA Support [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips1,
         }),
     };
     result[@intFromEnum(Feature.mips3)] = .{
         .llvm_name = "mips3",
         .description = "MIPS III ISA Support [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .fp64,
             .gp64,
             .mips2,
@@ -196,7 +196,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips32)] = .{
         .llvm_name = "mips32",
         .description = "Mips32 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips2,
             .mips3_32,
             .mips4_32,
@@ -205,7 +205,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips32r2)] = .{
         .llvm_name = "mips32r2",
         .description = "Mips32r2 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32,
             .mips3_32r2,
             .mips4_32r2,
@@ -215,21 +215,21 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips32r3)] = .{
         .llvm_name = "mips32r3",
         .description = "Mips32r3 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r2,
         }),
     };
     result[@intFromEnum(Feature.mips32r5)] = .{
         .llvm_name = "mips32r5",
         .description = "Mips32r5 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r3,
         }),
     };
     result[@intFromEnum(Feature.mips32r6)] = .{
         .llvm_name = "mips32r6",
         .description = "Mips32r6 ISA Support [experimental]",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .abs2008,
             .fp64,
             .mips32r5,
@@ -239,22 +239,22 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips3_32)] = .{
         .llvm_name = "mips3_32",
         .description = "Subset of MIPS-III that is also in MIPS32 [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips3_32r2)] = .{
         .llvm_name = "mips3_32r2",
         .description = "Subset of MIPS-III that is also in MIPS32r2 [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips3d)] = .{
         .llvm_name = "mips3d",
         .description = "Mips 3D ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips4)] = .{
         .llvm_name = "mips4",
         .description = "MIPS IV ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips3,
             .mips4_32,
             .mips4_32r2,
@@ -263,17 +263,17 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips4_32)] = .{
         .llvm_name = "mips4_32",
         .description = "Subset of MIPS-IV that is also in MIPS32 [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips4_32r2)] = .{
         .llvm_name = "mips4_32r2",
         .description = "Subset of MIPS-IV that is also in MIPS32r2 [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips5)] = .{
         .llvm_name = "mips5",
         .description = "MIPS V ISA Support [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips4,
             .mips5_32r2,
         }),
@@ -281,12 +281,12 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips5_32r2)] = .{
         .llvm_name = "mips5_32r2",
         .description = "Subset of MIPS-V that is also in MIPS32r2 [highly experimental]",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mips64)] = .{
         .llvm_name = "mips64",
         .description = "Mips64 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32,
             .mips5,
         }),
@@ -294,7 +294,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips64r2)] = .{
         .llvm_name = "mips64r2",
         .description = "Mips64r2 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r2,
             .mips64,
         }),
@@ -302,7 +302,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips64r3)] = .{
         .llvm_name = "mips64r3",
         .description = "Mips64r3 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r3,
             .mips64r2,
         }),
@@ -310,7 +310,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips64r5)] = .{
         .llvm_name = "mips64r5",
         .description = "Mips64r5 ISA Support",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r5,
             .mips64r3,
         }),
@@ -318,7 +318,7 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.mips64r6)] = .{
         .llvm_name = "mips64r6",
         .description = "Mips64r6 ISA Support [experimental]",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r6,
             .mips64r5,
         }),
@@ -326,89 +326,89 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.msa)] = .{
         .llvm_name = "msa",
         .description = "Mips MSA ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mt)] = .{
         .llvm_name = "mt",
         .description = "Mips MT ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.nan2008)] = .{
         .llvm_name = "nan2008",
         .description = "IEEE 754-2008 NaN encoding",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.noabicalls)] = .{
         .llvm_name = "noabicalls",
         .description = "Disable SVR4-style position-independent code",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.nomadd4)] = .{
         .llvm_name = "nomadd4",
         .description = "Disable 4-operand madd.fmt and related instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.nooddspreg)] = .{
         .llvm_name = "nooddspreg",
         .description = "Disable odd numbered single-precision registers",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.p5600)] = .{
         .llvm_name = "p5600",
         .description = "The P5600 Processor",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .mips32r5,
         }),
     };
     result[@intFromEnum(Feature.ptr64)] = .{
         .llvm_name = "ptr64",
         .description = "Pointers are 64-bit wide",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.single_float)] = .{
         .llvm_name = "single-float",
         .description = "Only supports single precision float",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.soft_float)] = .{
         .llvm_name = "soft-float",
         .description = "Does not support floating point instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.strict_align)] = .{
         .llvm_name = "strict-align",
         .description = "Disable unaligned load store for r6",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sym32)] = .{
         .llvm_name = "sym32",
         .description = "Symbols are 32 bit on Mips64",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.use_indirect_jump_hazard)] = .{
         .llvm_name = "use-indirect-jump-hazard",
         .description = "Use indirect jump guards to prevent certain speculation based attacks",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.use_tcc_in_div)] = .{
         .llvm_name = "use-tcc-in-div",
         .description = "Force the assembler to use trapping",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.vfpu)] = .{
         .llvm_name = "vfpu",
         .description = "Enable vector FPU instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.virt)] = .{
         .llvm_name = "virt",
         .description = "Mips Virtualization ASE",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.xgot)] = .{
         .llvm_name = "xgot",
         .description = "Assume 32-bit GOT",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -422,147 +422,147 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips32,
         }),
     };
     pub const @"i6400": CpuModel = .{
         .name = "i6400",
         .llvm_name = "i6400",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .i6400,
         }),
     };
     pub const @"i6500": CpuModel = .{
         .name = "i6500",
         .llvm_name = "i6500",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .i6500,
         }),
     };
     pub const mips1: CpuModel = .{
         .name = "mips1",
         .llvm_name = "mips1",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips1,
         }),
     };
     pub const mips2: CpuModel = .{
         .name = "mips2",
         .llvm_name = "mips2",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips2,
         }),
     };
     pub const mips3: CpuModel = .{
         .name = "mips3",
         .llvm_name = "mips3",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips3,
         }),
     };
     pub const mips32: CpuModel = .{
         .name = "mips32",
         .llvm_name = "mips32",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips32,
         }),
     };
     pub const mips32r2: CpuModel = .{
         .name = "mips32r2",
         .llvm_name = "mips32r2",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips32r2,
         }),
     };
     pub const mips32r3: CpuModel = .{
         .name = "mips32r3",
         .llvm_name = "mips32r3",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips32r3,
         }),
     };
     pub const mips32r5: CpuModel = .{
         .name = "mips32r5",
         .llvm_name = "mips32r5",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips32r5,
         }),
     };
     pub const mips32r6: CpuModel = .{
         .name = "mips32r6",
         .llvm_name = "mips32r6",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips32r6,
         }),
     };
     pub const mips4: CpuModel = .{
         .name = "mips4",
         .llvm_name = "mips4",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips4,
         }),
     };
     pub const mips5: CpuModel = .{
         .name = "mips5",
         .llvm_name = "mips5",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips5,
         }),
     };
     pub const mips64: CpuModel = .{
         .name = "mips64",
         .llvm_name = "mips64",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips64,
         }),
     };
     pub const mips64r2: CpuModel = .{
         .name = "mips64r2",
         .llvm_name = "mips64r2",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips64r2,
         }),
     };
     pub const mips64r3: CpuModel = .{
         .name = "mips64r3",
         .llvm_name = "mips64r3",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips64r3,
         }),
     };
     pub const mips64r5: CpuModel = .{
         .name = "mips64r5",
         .llvm_name = "mips64r5",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips64r5,
         }),
     };
     pub const mips64r6: CpuModel = .{
         .name = "mips64r6",
         .llvm_name = "mips64r6",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .mips64r6,
         }),
     };
     pub const octeon: CpuModel = .{
         .name = "octeon",
         .llvm_name = "octeon",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .cnmips,
         }),
     };
     pub const @"octeon+": CpuModel = .{
         .name = "octeon+",
         .llvm_name = "octeon+",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .cnmipsp,
         }),
     };
     pub const p5600: CpuModel = .{
         .name = "p5600",
         .llvm_name = "p5600",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .p5600,
         }),
     };

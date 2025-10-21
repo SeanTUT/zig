@@ -37,98 +37,98 @@ pub const all_features = blk: {
     result[@intFromEnum(Feature.atomics)] = .{
         .llvm_name = "atomics",
         .description = "Enable Atomics",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.bulk_memory)] = .{
         .llvm_name = "bulk-memory",
         .description = "Enable bulk memory operations",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .bulk_memory_opt,
         }),
     };
     result[@intFromEnum(Feature.bulk_memory_opt)] = .{
         .llvm_name = "bulk-memory-opt",
         .description = "Enable bulk memory optimization operations",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.call_indirect_overlong)] = .{
         .llvm_name = "call-indirect-overlong",
         .description = "Enable overlong encoding for call_indirect immediates",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.exception_handling)] = .{
         .llvm_name = "exception-handling",
         .description = "Enable Wasm exception handling",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.extended_const)] = .{
         .llvm_name = "extended-const",
         .description = "Enable extended const expressions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.fp16)] = .{
         .llvm_name = "fp16",
         .description = "Enable FP16 instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.multimemory)] = .{
         .llvm_name = "multimemory",
         .description = "Enable multiple memories",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.multivalue)] = .{
         .llvm_name = "multivalue",
         .description = "Enable multivalue blocks, instructions, and functions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.mutable_globals)] = .{
         .llvm_name = "mutable-globals",
         .description = "Enable mutable globals",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.nontrapping_bulk_memory_len0)] = .{
         .llvm_name = null,
         .description = "Bulk memory operations with a zero length do not trap",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .bulk_memory_opt,
         }),
     };
     result[@intFromEnum(Feature.nontrapping_fptoint)] = .{
         .llvm_name = "nontrapping-fptoint",
         .description = "Enable non-trapping float-to-int conversion operators",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.reference_types)] = .{
         .llvm_name = "reference-types",
         .description = "Enable reference types",
-        .dependencies = featureSet(&[_]Feature{
+        .dependencies = featureSet(&.{
             .call_indirect_overlong,
         }),
     };
     result[@intFromEnum(Feature.relaxed_simd)] = .{
         .llvm_name = "relaxed-simd",
         .description = "Enable relaxed-simd instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.sign_ext)] = .{
         .llvm_name = "sign-ext",
         .description = "Enable sign extension operators",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.simd128)] = .{
         .llvm_name = "simd128",
         .description = "Enable 128-bit SIMD",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.tail_call)] = .{
         .llvm_name = "tail-call",
         .description = "Enable tail call instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     result[@intFromEnum(Feature.wide_arithmetic)] = .{
         .llvm_name = "wide-arithmetic",
         .description = "Enable wide-arithmetic instructions",
-        .dependencies = featureSet(&[_]Feature{}),
+        .dependencies = featureSet(&.{}),
     };
     const ti = @typeInfo(Feature);
     for (&result, 0..) |*elem, i| {
@@ -142,7 +142,7 @@ pub const cpu = struct {
     pub const bleeding_edge: CpuModel = .{
         .name = "bleeding_edge",
         .llvm_name = "bleeding-edge",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .atomics,
             .bulk_memory,
             .exception_handling,
@@ -162,7 +162,7 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .bulk_memory,
             .multivalue,
             .mutable_globals,
@@ -174,7 +174,7 @@ pub const cpu = struct {
     pub const lime1: CpuModel = .{
         .name = "lime1",
         .llvm_name = "lime1",
-        .features = featureSet(&[_]Feature{
+        .features = featureSet(&.{
             .bulk_memory_opt,
             .call_indirect_overlong,
             .extended_const,
@@ -187,6 +187,6 @@ pub const cpu = struct {
     pub const mvp: CpuModel = .{
         .name = "mvp",
         .llvm_name = "mvp",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
 };

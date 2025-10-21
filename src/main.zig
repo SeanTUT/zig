@@ -184,7 +184,7 @@ pub fn main() anyerror!void {
     defer if (is_debug) {
         _ = debug_allocator.deinit();
     };
-    var arena_instance = std.heap.ArenaAllocator.init(gpa);
+    var arena_instance: std.heap.ArenaAllocator = .init(gpa);
     defer arena_instance.deinit();
     const arena = arena_instance.allocator();
 
@@ -201,7 +201,7 @@ pub fn main() anyerror!void {
         wasi_preopens = try fs.wasi.preopensAlloc(arena);
     }
 
-    return mainArgs(gpa, arena, args);
+    return mainArgs(arena, arena, args);
 }
 
 fn mainArgs(gpa: Allocator, arena: Allocator, args: []const []const u8) !void {

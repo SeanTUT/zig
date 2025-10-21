@@ -27,11 +27,11 @@ pub const cpu = struct {
     pub const generic: CpuModel = .{
         .name = "generic",
         .llvm_name = "generic",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
     pub const xs1b_generic: CpuModel = .{
         .name = "xs1b_generic",
         .llvm_name = "xs1b-generic",
-        .features = featureSet(&[_]Feature{}),
+        .features = featureSet(&.{}),
     };
 };

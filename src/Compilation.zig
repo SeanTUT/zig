@@ -3915,7 +3915,7 @@ fn addBuf(list: *std.array_list.Managed([]const u8), buf: []const u8) void {
 }
 
 /// This function is temporally single-threaded.
-pub fn getAllErrorsAlloc(comp: *Compilation) error{OutOfMemory}!ErrorBundle {
+pub fn getAllErrorsAlloc(comp: *Compilation) Allocator.Error!ErrorBundle {
     const gpa = comp.gpa;
 
     var bundle: ErrorBundle.Wip = undefined;
@@ -6095,7 +6095,7 @@ fn reportRetryableCObjectError(
     comp: *Compilation,
     c_object: *CObject,
     err: anyerror,
-) error{OutOfMemory}!void {
+) Allocator.Error!void {
     c_object.status = .failure_retryable;
 
     switch (comp.failCObj(c_object, "{s}", .{@errorName(err)})) {
@@ -6108,7 +6108,7 @@ fn reportRetryableWin32ResourceError(
     comp: *Compilation,
     win32_resource: *Win32Resource,
     err: anyerror,
-) error{OutOfMemory}!void {
+) Allocator.Error!void {
     win32_resource.status = .failure_retryable;
 
     var bundle: ErrorBundle.Wip = undefined;
@@ -6755,7 +6755,7 @@ fn spawnZigRc(
     }
 }
 
-pub fn tmpFilePath(comp: Compilation, ally: Allocator, suffix: []const u8) error{OutOfMemory}![]const u8 {
+pub fn tmpFilePath(comp: Compilation, ally: Allocator, suffix: []const u8) Allocator.Error![]const u8 {
     const s = fs.path.sep_str;
     const rand_int = std.crypto.random.int(u64);
     if (comp.dirs.local_cache.path) |p| {

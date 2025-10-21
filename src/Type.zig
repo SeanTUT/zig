@@ -436,7 +436,7 @@ pub fn toValue(self: Type) Value {
     return Value.fromInterned(self.toIntern());
 }
 
-const RuntimeBitsError = SemaError || error{NeedLazy};
+pub const LazySemaError = SemaError || error{NeedLazy};
 
 pub fn hasRuntimeBits(ty: Type, zcu: *const Zcu) bool {
     return hasRuntimeBitsInner(ty, false, .eager, zcu, {}) catch unreachable;
@@ -477,7 +477,7 @@ pub fn hasRuntimeBitsInner(
     comptime strat: ResolveStratLazy,
     zcu: strat.ZcuPtr(),
     tid: strat.Tid(),
-) RuntimeBitsError!bool {
+) LazySemaError!bool {
     const pt = strat.pt(zcu, tid);
     const ip = &zcu.intern_pool;
     return switch (ty.toIntern()) {
@@ -501,20 +501,7 @@ pub fn hasRuntimeBitsInner(
                 try Type.fromInterned(vector_type.child).hasRuntimeBitsInner(ignore_comptime_only, strat, zcu, tid),
             .opt_type => |child| {
                 const child_ty: Type = .fromInterned(child);
-                const is_no_return = switch (strat) {
-                    .sema => try child_ty.isNoReturnLikeSema(pt),
-                    .eager => child_ty.isNoReturnLike(zcu),
-                    .lazy => switch (zigTypeTag(child_ty, zcu)) {
-                        .noreturn => true,
-                        .@"enum" => child_ty.isNoReturnLike(zcu),
-                        .@"union",
-                        .error_set,
-                        .error_union,
-                        => return error.NeedLazy,
-                        else => false,
-                    },
-                };
-                if (is_no_return) {
+                if (try child_ty.isNoReturnLikeInner(strat, zcu, tid)) {
                     // Then the optional is comptime-known to be null.
                     return false;
                 }
@@ -945,13 +932,14 @@ pub const ResolveStrat = enum {
 };
 
 /// Whether a type is "noreturn-like".
+/// Performs semantic analysis only when `maybe_tid` is non-null.
 /// True for any of the following:
 /// - `noreturn`
 /// - Exhaustive empty enum types
 /// - Empty error sets
 /// - Unions with no fields or all noreturn-like fields
 /// - Error unions with an empty error set and noreturn-like payload
-fn isNoReturnLikeInner(ty: Type, zcu: *const Zcu, maybe_tid: ?Zcu.PerThread.Id) SemaError!bool {
+pub fn isNoReturnLikeInner(ty: Type, comptime strat: ResolveStratLazy, zcu: strat.ZcuPtr(), tid: strat.Tid()) LazySemaError!bool {
     const ip: *const InternPool = &zcu.intern_pool;
     switch (ty.toIntern()) {
         .none => unreachable,
@@ -969,35 +957,30 @@ fn isNoReturnLikeInner(ty: Type, zcu: *const Zcu, maybe_tid: ?Zcu.PerThread.Id) 
             .error_union_type => |info| {
                 const error_set_ty: Type = .fromInterned(info.error_set_type);
                 const payload_ty: Type = .fromInterned(info.payload_type);
-                return try error_set_ty.isNoReturnLikeInner(zcu, maybe_tid) and
-                    try payload_ty.isNoReturnLikeInner(zcu, maybe_tid);
+                return try error_set_ty.isNoReturnLikeInner(strat, zcu, tid) and
+                    try payload_ty.isNoReturnLikeInner(strat, zcu, tid);
             },
             .union_type => {
-                const union_type = ip.loadUnionType(ty.ip_index);
+                const status = ip.loadUnionType(intern).flagsUnordered(ip).status;
 
-                if (maybe_tid) |tid| {
-                    // When resolving the fields,
-                    // avoid dependency loops by
-                    // treating the type as
-                    // not noreturn-like until it is fully resolved.
-                    const flags = union_type.flagsUnordered(ip);
-                    switch (flags.status) {
-                        .none => try ty.resolveFields(.{
-                            .tid = tid,
-                            .zcu = @constCast(zcu),
-                        }),
-                        .field_types_wip => {
-                            // Uhhh
-                            // how the hell do we resolve this?
+                switch (strat) {
+                    .eager => assert(status.haveFieldTypes()),
+                    .lazy => if (!status.haveFieldTypes()) return error.NeedLazy,
+
+                    .sema => {
+                        if (status == .field_types_wip) {
+                            // TODO: Find a more graceful way to handle this.
                             return false;
-                        },
-                        else => {},
-                    }
+                        } else {
+                            try ty.resolveFields(strat.pt(zcu, tid));
+                        }
+                    },
                 }
 
+                const union_type = ip.loadUnionType(intern);
                 return for (union_type.field_types.get(ip)) |field_ty_intern| {
                     const field_ty: Type = .fromInterned(field_ty_intern);
-                    if (!try field_ty.isNoReturnLikeInner(zcu, maybe_tid)) break false;
+                    if (!try field_ty.isNoReturnLikeInner(strat, zcu, tid)) break false;
                 } else true;
             },
             else => return false,
@@ -1143,7 +1126,7 @@ fn isNoReturnLikeInner(ty: Type, zcu: *const Zcu, maybe_tid: ?Zcu.PerThread.Id) 
 /// - Unions with no fields or all noreturn-like fields
 /// - Error unions with an empty error set and noreturn-like payload
 pub fn isNoReturnLike(ty: Type, zcu: *const Zcu) bool {
-    return ty.isNoReturnLikeInner(zcu, null) catch unreachable;
+    return ty.isNoReturnLikeInner(.eager, zcu, {}) catch unreachable;
 }
 
 /// Whether a type is "noreturn-like".
@@ -1155,7 +1138,10 @@ pub fn isNoReturnLike(ty: Type, zcu: *const Zcu) bool {
 /// - Unions with no fields or all noreturn-like fields
 /// - Error unions with an empty error set and noreturn-like payload
 pub fn isNoReturnLikeSema(ty: Type, pt: Zcu.PerThread) SemaError!bool {
-    return ty.isNoReturnLikeInner(pt.zcu, pt.tid);
+    return ty.isNoReturnLikeInner(.sema, pt.zcu, pt.tid) catch |e| switch (e) {
+        error.NeedLazy => unreachable,
+        else => |err| err,
+    };
 }
 
 /// Never returns `none`. Asserts that all necessary type resolution is already done.
@@ -1783,19 +1769,20 @@ fn abiSizeInnerOptional(
     tid: strat.Tid(),
 ) SemaError!AbiSizeInner {
     const child_ty = ty.optionalChild(zcu);
+    const pt = strat.pt(zcu, tid);
 
-    switch (strat) {
-        .sema => try child_ty.resolveFields(strat.pt(zcu, tid)),
-        else => {},
-    }
-
-    if (child_ty.isNoReturnLike(zcu)) {
-        return .{ .scalar = 0 };
-    }
+    if (child_ty.isNoReturnLikeInner(strat, zcu, tid) catch |err| switch (err) {
+        error.NeedLazy => if (strat == .lazy) {
+            return .{ .val = Value.fromInterned(try pt.intern(.{ .int = .{
+                .ty = .comptime_int_type,
+                .storage = .{ .lazy_size = ty.toIntern() },
+            } })) };
+        } else unreachable,
+        else => |e| return e,
+    }) return .{ .scalar = 0 };
 
     if (!(child_ty.hasRuntimeBitsInner(false, strat, zcu, tid) catch |err| switch (err) {
         error.NeedLazy => if (strat == .lazy) {
-            const pt = strat.pt(zcu, tid);
             return .{ .val = Value.fromInterned(try pt.intern(.{ .int = .{
                 .ty = .comptime_int_type,
                 .storage = .{ .lazy_size = ty.toIntern() },
@@ -1813,7 +1800,7 @@ fn abiSizeInnerOptional(
         .val => switch (strat) {
             .sema => unreachable,
             .eager => unreachable,
-            .lazy => return .{ .val = Value.fromInterned(try strat.pt(zcu, tid).intern(.{ .int = .{
+            .lazy => return .{ .val = Value.fromInterned(try pt.intern(.{ .int = .{
                 .ty = .comptime_int_type,
                 .storage = .{ .lazy_size = ty.toIntern() },
             } })) },
@@ -2125,7 +2112,7 @@ pub fn optionalReprIsPayload(ty: Type, zcu: *const Zcu) bool {
     return switch (zcu.intern_pool.indexToKey(ty.toIntern())) {
         .opt_type => |child_type| child_type == .anyerror_type or switch (zcu.intern_pool.indexToKey(child_type)) {
             .ptr_type => |ptr_type| ptr_type.flags.size != .c and !ptr_type.flags.is_allowzero,
-            .error_set_type, .inferred_error_set_type => true,
+            .error_set_type, .inferred_error_set_type => !Type.fromInterned(child_type).errorSetIsEmpty(zcu),
             else => false,
         },
         .ptr_type => |ptr_type| ptr_type.flags.size == .c,
@@ -2338,18 +2325,7 @@ pub fn errorUnionSet(ty: Type, zcu: *const Zcu) Type {
 
 /// Returns false for unresolved inferred error sets.
 pub fn errorSetIsEmpty(ty: Type, zcu: *const Zcu) bool {
-    const ip = &zcu.intern_pool;
-    return switch (ty.toIntern()) {
-        .anyerror_type, .adhoc_inferred_error_set_type => false,
-        else => switch (ip.indexToKey(ty.toIntern())) {
-            .error_set_type => |error_set_type| error_set_type.names.len == 0,
-            .inferred_error_set_type => |i| switch (ip.funcIesResolvedUnordered(i)) {
-                .none, .anyerror_type => false,
-                else => |t| ip.indexToKey(t).error_set_type.names.len == 0,
-            },
-            else => unreachable,
-        },
-    };
+    return zcu.intern_pool.errorSetIsEmpty(ty.toIntern());
 }
 
 /// Returns true if it is an error set that includes anyerror, false otherwise.

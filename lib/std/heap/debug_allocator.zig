@@ -468,6 +468,7 @@ pub fn DebugAllocator(comptime config: Config) type {
                 });
                 leaks = true;
             }
+
             return leaks;
         }
 
