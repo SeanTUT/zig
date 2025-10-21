@@ -3916,6 +3916,7 @@ fn updateLazyType(
                     .mips_interrupt,
                     .riscv64_interrupt,
                     .riscv32_interrupt,
+                    .arc_interrupt,
                     .avr_builtin,
                     .avr_signal,
                     .avr_interrupt,

@@ -9078,6 +9078,7 @@ const calling_conventions_supporting_var_args = [_]std.builtin.CallingConvention
     .m68k_gnu,
     .m68k_rtd,
     .msp430_eabi,
+    .or1k_sysv,
     .s390x_sysv,
     .s390x_sysv_vx,
     .ve_sysv,
@@ -9124,6 +9125,7 @@ fn callConvIsCallable(cc: std.builtin.CallingConvention.Tag) bool {
     return switch (cc) {
         .naked,
 
+        .arc_interrupt,
         .arm_interrupt,
         .avr_interrupt,
         .avr_signal,
@@ -9286,6 +9288,7 @@ fn funcCommon(
                     else => return sema.fail(block, param_src, "'{s}' calling convention supports up to 2 parameters, found {d}", .{ @tagName(cc), i + 1 }),
                 }
             },
+            .arc_interrupt,
             .arm_interrupt,
             .mips64_interrupt,
             .mips_interrupt,
@@ -9517,6 +9520,7 @@ fn finishFunc(
         .mips_interrupt,
         .riscv64_interrupt,
         .riscv32_interrupt,
+        .arc_interrupt,
         .avr_interrupt,
         .csky_interrupt,
         .m68k_interrupt,
@@ -9957,8 +9961,19 @@ fn zirBitcast(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError!Air
                 dest_ty.fmt(pt), container,
             });
         },
+        .array => {
+            const elem_ty = dest_ty.childType(zcu);
+            if (!elem_ty.hasWellDefinedLayout(zcu)) {
+                const msg = msg: {
+                    const msg = try sema.errMsg(src, "cannot @bitCast to '{f}'", .{dest_ty.fmt(pt)});
+                    errdefer msg.destroy(sema.gpa);
+                    try sema.errNote(src, msg, "array element type '{f}' does not have a guaranteed in-memory layout", .{elem_ty.fmt(pt)});
+                    break :msg msg;
+                };
+                return sema.failWithOwnedErrorMsg(block, msg);
+            }
+        },
 
-        .array,
         .bool,
         .float,
         .int,
@@ -10020,8 +10035,19 @@ fn zirBitcast(sema: *Sema, block: *Block, inst: Zir.Inst.Index) CompileError!Air
                 operand_ty.fmt(pt), container,
             });
         },
+        .array => {
+            const elem_ty = operand_ty.childType(zcu);
+            if (!elem_ty.hasWellDefinedLayout(zcu)) {
+                const msg = msg: {
+                    const msg = try sema.errMsg(src, "cannot @bitCast from '{f}'", .{operand_ty.fmt(pt)});
+                    errdefer msg.destroy(sema.gpa);
+                    try sema.errNote(src, msg, "array element type '{f}' does not have a guaranteed in-memory layout", .{elem_ty.fmt(pt)});
+                    break :msg msg;
+                };
+                return sema.failWithOwnedErrorMsg(block, msg);
+            }
+        },
 
-        .array,
         .bool,
         .float,
         .int,
@@ -30109,6 +30135,9 @@ fn callconvCoerceAllowed(
                 std.builtin.CallingConvention.X86RegparmOptions => {
                     if (src_data.register_params != dest_data.register_params) return false;
                 },
+                std.builtin.CallingConvention.ArcInterruptOptions => {
+                    if (src_data.type != dest_data.type) return false;
+                },
                 std.builtin.CallingConvention.ArmInterruptOptions => {
                     if (src_data.type != dest_data.type) return false;
                 },
@@ -36619,7 +36648,7 @@ pub fn analyzeAsAddressSpace(
     const address_space = try sema.interpretBuiltinType(block, src, addrspace_val, std.builtin.AddressSpace);
     const target = pt.zcu.getTarget();
 
-    if (!target.cpu.supportsAddressSpace(address_space, ctx)) {
+    if (!target.supportsAddressSpace(address_space, ctx)) {
         // TODO error messages could be made more elaborate here
         const entity = switch (ctx) {
             .function => "functions",
